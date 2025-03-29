@@ -2,6 +2,7 @@ import useSWR from "swr";
 import { toast } from "sonner";
 import { auth } from "@/lib/init/firebase"; // Import Firebase auth
 import { useAuth } from "@/lib/auth-context"; // Import auth context
+import { useState, useCallback } from "react"; // Import useState and useCallback
 
 // Category type definition (API type)
 export type Category = {
@@ -38,11 +39,22 @@ export type CategoryStats = {
   parentCategories: number;
 };
 
+// Pagination type for categories
+export type PaginationInfo = {
+  page: number;
+  limit: number;
+  totalItems: number;
+  totalPages: number;
+  hasNextPage: boolean;
+  hasPrevPage: boolean;
+};
+
 // API Response types
 export type ApiResponse<T> = {
   success: boolean;
   data?: T;
   message?: string;
+  pagination?: PaginationInfo;
 };
 
 // Fetch function for SWR - now uses Firebase auth
@@ -107,10 +119,42 @@ export const mapUiToApiCategory = (
 
 export function useCategories() {
   const { user } = useAuth(); // Get user from auth context
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(20);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [typeFilter, setTypeFilter] = useState<"income" | "expense" | "">("");
+  const [parentOnlyFilter, setParentOnlyFilter] = useState(false);
+
+  // Build query URL with filters and pagination
+  const getQueryUrl = useCallback(() => {
+    if (!user) return null;
+
+    const url = "/api/categories";
+    const params = new URLSearchParams();
+
+    // Add pagination
+    params.append("page", currentPage.toString());
+    params.append("limit", pageSize.toString());
+
+    // Add filters
+    if (searchQuery) {
+      params.append("search", searchQuery);
+    }
+
+    if (typeFilter) {
+      params.append("type", typeFilter.toUpperCase());
+    }
+
+    if (parentOnlyFilter) {
+      params.append("parentOnly", "true");
+    }
+
+    return `${url}?${params.toString()}`;
+  }, [user, currentPage, pageSize, searchQuery, typeFilter, parentOnlyFilter]);
 
   // Only fetch when user is authenticated
   const { data, error, isLoading, mutate } = useSWR<ApiResponse<Category[]>>(
-    user ? "/api/categories" : null,
+    getQueryUrl,
     fetcher
   );
 
@@ -128,6 +172,9 @@ export function useCategories() {
   // Convert API categories to UI categories
   const categories: UiCategory[] =
     data?.success && data.data ? data.data.map(mapApiToUiCategory) : [];
+
+  // Extract pagination info
+  const pagination: PaginationInfo | undefined = data?.pagination;
 
   // Get stats from the backend instead of calculating them in the frontend
   const stats: CategoryStats =
@@ -262,6 +309,54 @@ export function useCategories() {
     }
   };
 
+  // Add pagination functions
+  const goToPage = (page: number) => {
+    if (page >= 1 && (!pagination || page <= pagination.totalPages)) {
+      setCurrentPage(page);
+    }
+  };
+
+  const nextPage = () => {
+    if (pagination && pagination.hasNextPage) {
+      setCurrentPage(currentPage + 1);
+    }
+  };
+
+  const previousPage = () => {
+    if (pagination && pagination.hasPrevPage) {
+      setCurrentPage(currentPage - 1);
+    }
+  };
+
+  const changePageSize = (size: number) => {
+    setPageSize(size);
+    setCurrentPage(1); // Reset to first page when changing page size
+  };
+
+  // Add search and filter functions
+  const updateSearchQuery = (query: string) => {
+    setSearchQuery(query);
+    setCurrentPage(1); // Reset to first page when search changes
+  };
+
+  const updateTypeFilter = (type: "income" | "expense" | "") => {
+    setTypeFilter(type);
+    setCurrentPage(1); // Reset to first page when filter changes
+  };
+
+  const updateParentOnlyFilter = (parentOnly: boolean) => {
+    setParentOnlyFilter(parentOnly);
+    setCurrentPage(1); // Reset to first page when filter changes
+  };
+
+  // Reset all filters
+  const resetFilters = () => {
+    setSearchQuery("");
+    setTypeFilter("");
+    setParentOnlyFilter(false);
+    setCurrentPage(1);
+  };
+
   return {
     categories,
     isLoading: isLoading || statsLoading,
@@ -276,5 +371,21 @@ export function useCategories() {
     incomeCategories: stats.incomeCategories,
     expenseCategories: stats.expenseCategories,
     parentCategories: stats.parentCategories,
+    // Pagination
+    pagination,
+    currentPage,
+    pageSize,
+    goToPage,
+    nextPage,
+    previousPage,
+    changePageSize,
+    // Search and filters
+    searchQuery,
+    typeFilter,
+    parentOnlyFilter,
+    updateSearchQuery,
+    updateTypeFilter,
+    updateParentOnlyFilter,
+    resetFilters,
   };
 }

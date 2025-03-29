@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { H1, P } from "@/components/ui/typography";
 import { Button } from "@/components/ui/button";
-import { Plus, Pencil, Trash2, Loader2 } from "lucide-react";
+import { Plus, Loader2 } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -15,8 +15,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { AddCategoryDialog } from "./components/add-category-dialog";
-import { DeleteCategoryDialog } from "./components/delete-category-dialog";
-import { EditCategoryDialog } from "./components/edit-category-dialog";
+import { CategoryDetailsDialog } from "./components/category-details-dialog";
 import { useCategories, UiCategory } from "@/hooks/useCategories";
 
 export default function CategoriesPage() {
@@ -24,8 +23,10 @@ export default function CategoriesPage() {
 
   // Dialog states
   const [addDialogOpen, setAddDialogOpen] = useState(false);
-  const [editCategory, setEditCategory] = useState<UiCategory | null>(null);
-  const [deleteCategory, setDeleteCategory] = useState<UiCategory | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<UiCategory | null>(
+    null
+  );
+  const [detailsOpen, setDetailsOpen] = useState(false);
 
   // Use the hook instead of direct API calls
   const {
@@ -97,15 +98,20 @@ export default function CategoriesPage() {
   const handleEditCategory = async (updatedCategory: UiCategory) => {
     const success = await updateCategoryAction(updatedCategory);
     if (success) {
-      setEditCategory(null);
+      setDetailsOpen(false);
     }
   };
 
-  const handleDeleteCategory = async (id: string) => {
-    const success = await deleteCategoryAction(id);
+  const handleDeleteCategory = async (category: UiCategory) => {
+    const success = await deleteCategoryAction(category.id);
     if (success) {
-      setDeleteCategory(null);
+      setDetailsOpen(false);
     }
+  };
+
+  const handleRowClick = (category: UiCategory) => {
+    setSelectedCategory(category);
+    setDetailsOpen(true);
   };
 
   return (
@@ -150,9 +156,6 @@ export default function CategoriesPage() {
               <TableHead className="text-center text-xs sm:text-sm">
                 Usage
               </TableHead>
-              <TableHead className="text-right text-xs sm:text-sm">
-                Actions
-              </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -187,7 +190,10 @@ export default function CategoriesPage() {
               organizedCategories.map(({ category, level }) => (
                 <TableRow
                   key={category.id}
-                  className={level > 0 ? "bg-muted/10" : ""}
+                  className={`${
+                    level > 0 ? "bg-muted/10" : ""
+                  } hover:bg-muted/50 cursor-pointer`}
+                  onClick={() => handleRowClick(category)}
                 >
                   <TableCell className="py-2 sm:py-4">
                     <div className="flex items-center gap-1 sm:gap-2">
@@ -230,26 +236,6 @@ export default function CategoriesPage() {
                   </TableCell>
                   <TableCell className="text-center py-2 sm:py-4 text-xs sm:text-sm">
                     {category.usageCount}
-                  </TableCell>
-                  <TableCell className="text-right py-2 sm:py-4">
-                    <div className="flex justify-end gap-1 sm:gap-2">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-6 w-6 sm:h-8 sm:w-8"
-                        onClick={() => setEditCategory(category)}
-                      >
-                        <Pencil className="h-3 w-3 sm:h-4 sm:w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-6 w-6 sm:h-8 sm:w-8"
-                        onClick={() => setDeleteCategory(category)}
-                      >
-                        <Trash2 className="h-3 w-3 sm:h-4 sm:w-4 text-destructive" />
-                      </Button>
-                    </div>
                   </TableCell>
                 </TableRow>
               ))
@@ -297,21 +283,18 @@ export default function CategoriesPage() {
         onAddCategory={handleAddCategory}
       />
 
-      {editCategory && (
-        <EditCategoryDialog
-          category={editCategory}
-          open={!!editCategory}
-          onOpenChange={() => setEditCategory(null)}
-          onSave={handleEditCategory}
-        />
-      )}
-
-      {deleteCategory && (
-        <DeleteCategoryDialog
-          category={deleteCategory}
-          open={!!deleteCategory}
-          onOpenChange={() => setDeleteCategory(null)}
-          onDelete={() => handleDeleteCategory(deleteCategory.id)}
+      {selectedCategory && (
+        <CategoryDetailsDialog
+          category={selectedCategory}
+          open={detailsOpen}
+          onOpenChange={(open) => {
+            if (!open) {
+              setSelectedCategory(null);
+            }
+            setDetailsOpen(open);
+          }}
+          onEdit={handleEditCategory}
+          onDelete={handleDeleteCategory}
         />
       )}
     </div>

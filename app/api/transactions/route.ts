@@ -26,6 +26,12 @@ export async function GET(request: Request) {
     const startDate = searchParams.get("startDate");
     const endDate = searchParams.get("endDate");
     const status = searchParams.get("status");
+    const search = searchParams.get("search");
+
+    // Pagination parameters
+    const page = parseInt(searchParams.get("page") || "1");
+    const limit = parseInt(searchParams.get("limit") || "10");
+    const offset = (page - 1) * limit;
 
     // Build query with potential filters
     let sql = `
@@ -58,14 +64,63 @@ export async function GET(request: Request) {
       params.push(status.toUpperCase()); // Ensure status is uppercase for consistency
     }
 
-    // Add order by
-    sql += " ORDER BY t.date DESC";
+    if (search) {
+      sql += ` AND (
+        t.description ILIKE $${paramIndex++} OR
+        t.notes ILIKE $${paramIndex++}
+      )`;
+      // Use ILIKE for case-insensitive search with wildcards
+      const searchTerm = `%${search}%`;
+      params.push(searchTerm, searchTerm);
+    }
+
+    // First, get total count for pagination metadata
+    const countSql = `
+      SELECT COUNT(*) FROM transactions t
+      WHERE t.profile_id = $1
+      ${category ? `AND t.category_id = $${params.indexOf(category) + 1}` : ""}
+      ${startDate ? `AND t.date >= $${params.indexOf(startDate) + 1}` : ""}
+      ${endDate ? `AND t.date <= $${params.indexOf(endDate) + 1}` : ""}
+      ${
+        status
+          ? `AND t.status = $${params.indexOf(status.toUpperCase()) + 1}`
+          : ""
+      }
+      ${
+        search
+          ? `AND (
+              t.description ILIKE $${params.indexOf(`%${search}%`) + 1} OR
+              t.notes ILIKE $${params.indexOf(`%${search}%`) + 2}
+            )`
+          : ""
+      }
+    `;
+
+    const countResult = await db.query(countSql, [
+      profile_id,
+      ...params.slice(1),
+    ]);
+    const totalCount = parseInt(countResult.rows[0].count);
+    const totalPages = Math.ceil(totalCount / limit);
+
+    // Add order by and pagination
+    sql += " ORDER BY t.created_at DESC, t.id DESC";
+    sql += ` LIMIT $${paramIndex++} OFFSET $${paramIndex++}`;
+    params.push(limit, offset);
 
     const result = await db.query(sql, params);
 
     return NextResponse.json({
       success: true,
       data: result.rows as Transaction[],
+      pagination: {
+        page,
+        limit,
+        totalItems: totalCount,
+        totalPages,
+        hasNextPage: page < totalPages,
+        hasPrevPage: page > 1,
+      },
     });
   } catch (error) {
     console.error("Error fetching transactions:", error);

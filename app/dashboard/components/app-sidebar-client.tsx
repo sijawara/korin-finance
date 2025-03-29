@@ -60,9 +60,6 @@ export function AppSidebarClient({
 
   // Check if current path matches the item URL
   const isActive = (url: string) => {
-    if (url === "/dashboard") {
-      return pathname === "/dashboard";
-    }
     return pathname.startsWith(url);
   };
 
@@ -103,7 +100,7 @@ export function AppSidebarClient({
               asChild
               className="data-[slot=sidebar-menu-button]:!p-1.5"
             >
-              <Link href="/dashboard" className="flex items-center">
+              <Link href="/dashboard/reports" className="flex items-center">
                 <KorinAILogo
                   size={28}
                   className="min-w-7 min-h-7"

@@ -58,19 +58,6 @@ interface CategoryApiResponse {
   profile_id?: string;
 }
 
-// Define transaction API response type
-interface TransactionApiResponse {
-  id: string;
-  description: string;
-  amount: number;
-  category_id: string;
-  date: string;
-  notes?: string;
-  profile_id: string;
-  created_at: string;
-  updated_at: string;
-}
-
 // Category type definition for hierarchical structure
 type Category = {
   id: string;
@@ -107,11 +94,28 @@ const formSchema = z.object({
     required_error: "Please select a date.",
   }),
   notes: z.string().optional(),
+  status: z.enum(["paid", "unpaid"], {
+    required_error: "Please select a status.",
+  }),
 });
 
 type TransactionFormValues = z.infer<typeof formSchema>;
 
-export function AddTransactionDialog() {
+// Add addTransaction prop type
+type AddTransactionDialogProps = {
+  addTransaction?: (transaction: {
+    description: string;
+    amount: number;
+    categoryId: string;
+    date: string;
+    notes?: string;
+    status: string;
+  }) => Promise<boolean>;
+};
+
+export function AddTransactionDialog({
+  addTransaction,
+}: AddTransactionDialogProps) {
   const [open, setOpen] = useState(false);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(false);
@@ -261,6 +265,7 @@ export function AddTransactionDialog() {
       category: "",
       date: new Date(),
       notes: "",
+      status: "paid",
     },
   });
 
@@ -275,33 +280,70 @@ export function AddTransactionDialog() {
     // Create a transaction object to send to the API
     const createTransaction = async () => {
       try {
+        // Use addTransaction from props or fall back to direct API call
         const transactionData = {
           description: values.description,
           amount: finalAmount,
-          category_id: values.category,
+          categoryId: values.category,
           date: values.date.toISOString(),
           notes: values.notes || "",
+          status: values.status,
         };
 
-        const response = await makeRequest<ApiResponse<TransactionApiResponse>>(
-          "/api/transactions",
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify(transactionData),
+        if (addTransaction) {
+          // Use the provided addTransaction function
+          // Don't show toast here as useTransactions.addTransaction already has toast notifications
+          const success = await addTransaction(transactionData);
+          if (!success) {
+            throw new Error("Failed to create transaction");
           }
-        );
+        } else {
+          // Fall back to direct API call if addTransaction is not provided
+          interface TransactionResponse {
+            id: string;
+            description: string;
+            amount: number;
+            category_id: string;
+            date: string;
+            notes?: string;
+            created_at: string;
+            updated_at: string;
+          }
 
-        if (!response || !response.success) {
-          throw new Error(response?.message || "Failed to create transaction");
+          const response = await makeRequest<ApiResponse<TransactionResponse>>(
+            "/api/transactions",
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                description: values.description,
+                amount: finalAmount,
+                category_id: values.category,
+                date: values.date.toISOString(),
+                notes: values.notes || "",
+                status: values.status.toUpperCase(),
+              }),
+            }
+          );
+
+          if (!response || !response.success) {
+            throw new Error(
+              response?.message || "Failed to create transaction"
+            );
+          }
+
+          // Only show toast when using direct API call
+          toast.success("Transaction added successfully");
         }
-
-        toast.success("Transaction added successfully");
       } catch (error) {
         console.error("Error creating transaction:", error);
-        toast.error("Failed to create transaction");
+
+        // Only show error toast for the direct API call case
+        if (!addTransaction) {
+          toast.error("Failed to create transaction");
+        }
       }
     };
 
@@ -353,6 +395,8 @@ export function AddTransactionDialog() {
                 </FormItem>
               )}
             />
+
+            {/* Amount and Date in the same row */}
             <div className="grid grid-cols-2 gap-4">
               <FormField
                 control={form.control}
@@ -408,96 +452,135 @@ export function AddTransactionDialog() {
                 )}
               />
             </div>
-            <FormField
-              control={form.control}
-              name="category"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Category</FormLabel>
-                  <Select
-                    onValueChange={(value) => {
-                      field.onChange(value);
-                      const category = categories.find(
-                        (cat) => cat.id === value
-                      );
-                      setSelectedCategoryType(category?.type || null);
-                    }}
-                    defaultValue={field.value}
-                    disabled={loading}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue
-                          placeholder={
-                            loading
-                              ? "Loading categories..."
-                              : "Select a category"
-                          }
-                        />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {/* Income categories group */}
-                      <SelectGroup>
-                        <SelectLabel>Income</SelectLabel>
-                        {parents
-                          .filter((parent) => parent.type === "income")
-                          .map((parent) => (
-                            <SelectItem key={parent.id} value={parent.id}>
-                              <div className="flex items-center gap-2">
-                                <div
-                                  className="w-3 h-3 rounded-full"
-                                  style={{ backgroundColor: parent.color }}
-                                />
-                                <span>{parent.name}</span>
-                              </div>
-                            </SelectItem>
-                          ))}
-                      </SelectGroup>
 
-                      {/* Expense categories group with subcategories */}
-                      <SelectGroup>
-                        <SelectLabel>Expenses</SelectLabel>
-                        {parents
-                          .filter((parent) => parent.type === "expense")
-                          .map((parent) => (
-                            <React.Fragment key={parent.id}>
-                              {/* Parent category */}
-                              <SelectItem value={parent.id}>
+            {/* Category and Status in the same row */}
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="category"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Category</FormLabel>
+                    <Select
+                      onValueChange={(value) => {
+                        field.onChange(value);
+                        const category = categories.find(
+                          (cat) => cat.id === value
+                        );
+                        setSelectedCategoryType(category?.type || null);
+                      }}
+                      defaultValue={field.value}
+                      disabled={loading}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue
+                            placeholder={
+                              loading
+                                ? "Loading categories..."
+                                : "Select a category"
+                            }
+                          />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {/* Income categories group */}
+                        <SelectGroup>
+                          <SelectLabel>Income</SelectLabel>
+                          {parents
+                            .filter((parent) => parent.type === "income")
+                            .map((parent) => (
+                              <SelectItem key={parent.id} value={parent.id}>
                                 <div className="flex items-center gap-2">
                                   <div
                                     className="w-3 h-3 rounded-full"
                                     style={{ backgroundColor: parent.color }}
                                   />
-                                  <span className="font-medium">
-                                    {parent.name}
-                                  </span>
+                                  <span>{parent.name}</span>
                                 </div>
                               </SelectItem>
+                            ))}
+                        </SelectGroup>
 
-                              {/* Child categories with indentation */}
-                              {childrenByParent[parent.id]?.map((child) => (
-                                <SelectItem key={child.id} value={child.id}>
-                                  <div className="flex items-center gap-2 ml-4">
+                        {/* Expense categories group with subcategories */}
+                        <SelectGroup>
+                          <SelectLabel>Expenses</SelectLabel>
+                          {parents
+                            .filter((parent) => parent.type === "expense")
+                            .map((parent) => (
+                              <React.Fragment key={parent.id}>
+                                {/* Parent category */}
+                                <SelectItem value={parent.id}>
+                                  <div className="flex items-center gap-2">
                                     <div
                                       className="w-3 h-3 rounded-full"
-                                      style={{ backgroundColor: child.color }}
+                                      style={{ backgroundColor: parent.color }}
                                     />
-                                    <span className="text-sm">
-                                      {child.name}
+                                    <span className="font-medium">
+                                      {parent.name}
                                     </span>
                                   </div>
                                 </SelectItem>
-                              ))}
-                            </React.Fragment>
-                          ))}
-                      </SelectGroup>
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+
+                                {/* Child categories with indentation */}
+                                {childrenByParent[parent.id]?.map((child) => (
+                                  <SelectItem key={child.id} value={child.id}>
+                                    <div className="flex items-center gap-2 ml-4">
+                                      <div
+                                        className="w-3 h-3 rounded-full"
+                                        style={{ backgroundColor: child.color }}
+                                      />
+                                      <span className="text-sm">
+                                        {child.name}
+                                      </span>
+                                    </div>
+                                  </SelectItem>
+                                ))}
+                              </React.Fragment>
+                            ))}
+                        </SelectGroup>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="status"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Status</FormLabel>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select status" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="paid">
+                          <div className="flex items-center gap-2">
+                            <div className="w-3 h-3 rounded-full bg-green-500" />
+                            <span>Paid</span>
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="unpaid">
+                          <div className="flex items-center gap-2">
+                            <div className="w-3 h-3 rounded-full bg-amber-500" />
+                            <span>Unpaid</span>
+                          </div>
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
             <FormField
               control={form.control}
               name="notes"

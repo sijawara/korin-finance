@@ -32,6 +32,7 @@ import { useForm } from "react-hook-form";
 import { Textarea } from "@/components/ui/textarea";
 import { useEffect } from "react";
 import { Checkbox } from "@/components/ui/checkbox";
+import { useCategories } from "@/hooks/useCategories";
 
 // Define the schema for the form
 const formSchema = z.object({
@@ -80,15 +81,15 @@ export function AddCategoryDialog({
     { value: "#fb923c", label: "Orange" },
   ];
 
-  // Current available parent categories for selection
-  // In a real app, this would be fetched from your backend
-  const availableParentCategories = [
-    { id: "1", name: "Housing" },
-    { id: "3", name: "Food" },
-    { id: "4", name: "Transportation" },
-    { id: "5", name: "Entertainment" },
-    { id: "6", name: "Debt Payments" },
-  ];
+  // Get categories from the hook with parent-only filter
+  const {
+    categories: allCategories,
+    updateParentOnlyFilter,
+    updateTypeFilter,
+  } = useCategories();
+
+  // Filter for parent categories
+  const availableParentCategories = allCategories.filter((cat) => cat.isParent);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -100,6 +101,29 @@ export function AddCategoryDialog({
       isParent: false,
     },
   });
+
+  // Set parent-only filter when component mounts
+  useEffect(() => {
+    updateParentOnlyFilter(true);
+
+    // Clean up filter when component unmounts
+    return () => {
+      updateParentOnlyFilter(false);
+    };
+  }, [updateParentOnlyFilter]);
+
+  // Update type filter when form type changes
+  const formType = form.watch("type");
+  useEffect(() => {
+    if (formType) {
+      updateTypeFilter(formType);
+    }
+
+    // Clean up filter when component unmounts
+    return () => {
+      updateTypeFilter("");
+    };
+  }, [formType, updateTypeFilter]);
 
   // Watch for isParent changes to reset parentId appropriately
   const isParent = form.watch("isParent");
@@ -290,11 +314,13 @@ export function AddCategoryDialog({
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {availableParentCategories.map((parent) => (
-                          <SelectItem key={parent.id} value={parent.id}>
-                            {parent.name}
-                          </SelectItem>
-                        ))}
+                        {availableParentCategories
+                          .filter((parent) => parent.type === formType)
+                          .map((parent) => (
+                            <SelectItem key={parent.id} value={parent.id}>
+                              {parent.name}
+                            </SelectItem>
+                          ))}
                       </SelectContent>
                     </Select>
                     <FormDescription>
