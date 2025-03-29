@@ -1,4 +1,14 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Korin Finance - Personal Finance Management
+
+This is a modern personal finance management application built with [Next.js](https://nextjs.org) and bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+
+## Features
+
+- Track income and expenses
+- Categorize transactions
+- Visual reporting and analytics
+- User authentication
+- Responsive design for desktop and mobile use
 
 ## Getting Started
 
