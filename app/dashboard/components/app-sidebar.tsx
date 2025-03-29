@@ -10,9 +10,9 @@ export interface NavItemProps {
 const defaultNavItems = {
   navMain: [
     {
-      title: "Dashboard",
-      url: "/dashboard",
-      iconName: "LayoutDashboard",
+      title: "Reports",
+      url: "/dashboard/reports",
+      iconName: "BarChart3",
     },
     {
       title: "Transactions",
@@ -23,11 +23,6 @@ const defaultNavItems = {
       title: "Categories",
       url: "/dashboard/categories",
       iconName: "Tag",
-    },
-    {
-      title: "Reports",
-      url: "/dashboard/reports",
-      iconName: "BarChart3",
     },
   ],
   navSecondary: [

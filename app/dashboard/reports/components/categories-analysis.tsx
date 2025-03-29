@@ -8,9 +8,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import {
-  Download,
   Loader2,
   PieChart,
   BarChart3,
@@ -126,10 +124,6 @@ export function CategoriesAnalysis({ period }: CategoriesAnalysisProps) {
               Breakdown for {categoriesData.period.label}
             </CardDescription>
           </div>
-          <Button variant="outline" size="sm">
-            <Download className="h-4 w-4 mr-2" />
-            Export
-          </Button>
         </CardHeader>
         <CardContent>
           <Tabs

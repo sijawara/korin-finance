@@ -2,15 +2,7 @@
 
 import { useState } from "react";
 import { H1, P } from "@/components/ui/typography";
-import { Button } from "@/components/ui/button";
-import {
-  Download,
-  Calendar,
-  BarChart,
-  PieChart,
-  LineChart,
-  ArrowUpDown,
-} from "lucide-react";
+import { BarChart, PieChart, LineChart, DollarSign } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Select,
@@ -20,7 +12,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { IncomeStatement } from "./components/income-statement";
-import { SpendingTrends } from "./components/spending-trends";
+import { Accounts } from "./components/accounts";
 import { Overview } from "./components/overview";
 import { CategoriesAnalysis } from "./components/categories-analysis";
 
@@ -56,14 +48,6 @@ export default function ReportsPage() {
               <SelectItem value="custom">Custom Period</SelectItem>
             </SelectContent>
           </Select>
-          <Button variant="outline" size="sm" className="text-xs sm:text-sm">
-            <Calendar className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
-            Custom Range
-          </Button>
-          <Button variant="outline" size="sm" className="text-xs sm:text-sm">
-            <Download className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
-            Export
-          </Button>
         </div>
       </div>
 
@@ -90,11 +74,11 @@ export default function ReportsPage() {
               Income Statement
             </TabsTrigger>
             <TabsTrigger
-              value="spending-trends"
+              value="accounts"
               className="flex-shrink-0 flex items-center gap-1 sm:gap-2 px-3 sm:px-6"
             >
-              <ArrowUpDown className="h-3 w-3 sm:h-4 sm:w-4" />
-              Spending Trends
+              <DollarSign className="h-3 w-3 sm:h-4 sm:w-4" />
+              Accounts
             </TabsTrigger>
             <TabsTrigger
               value="categories"
@@ -116,9 +100,9 @@ export default function ReportsPage() {
           <IncomeStatement period={selectedPeriod} />
         </TabsContent>
 
-        {/* Spending Trends Tab Content */}
-        <TabsContent value="spending-trends" className="mt-0">
-          <SpendingTrends period={selectedPeriod} />
+        {/* Accounts Tab Content */}
+        <TabsContent value="accounts" className="mt-0">
+          <Accounts period={selectedPeriod} />
         </TabsContent>
 
         {/* Categories Tab Content */}

@@ -17,21 +17,82 @@ export async function GET(request: Request) {
     const decodedToken = await verifyToken(token);
     const profile_id = decodedToken.uid;
 
-    // Get all categories with their usage count and filter by profile_id
-    const result = await db.query(
-      `
+    // Get search parameters
+    const { searchParams } = new URL(request.url);
+
+    // Pagination parameters
+    const page = parseInt(searchParams.get("page") || "1");
+    const limit = parseInt(searchParams.get("limit") || "20");
+    const offset = (page - 1) * limit;
+
+    // Optional filters
+    const type = searchParams.get("type");
+    const parentOnly = searchParams.get("parentOnly") === "true";
+    const searchQuery = searchParams.get("search");
+
+    // Build the base query
+    let countQuery = `
+      SELECT COUNT(*) 
+      FROM categories c
+      WHERE c.profile_id = $1
+    `;
+
+    let query = `
       SELECT c.*, 
         (SELECT COUNT(*) FROM transactions WHERE category_id = c.id) AS usage_count 
       FROM categories c
       WHERE c.profile_id = $1
-      ORDER BY name
-    `,
-      [profile_id]
-    );
+    `;
+
+    // Add filters to both queries
+    const params: (string | boolean | number)[] = [profile_id];
+    let paramIndex = 2;
+
+    if (type) {
+      const whereClause = ` AND c.type = $${paramIndex++}`;
+      countQuery += whereClause;
+      query += whereClause;
+      params.push(type.toUpperCase());
+    }
+
+    if (parentOnly) {
+      const whereClause = ` AND c.is_parent = $${paramIndex++}`;
+      countQuery += whereClause;
+      query += whereClause;
+      params.push(parentOnly);
+    }
+
+    if (searchQuery) {
+      const whereClause = ` AND (c.name ILIKE $${paramIndex++} OR c.description ILIKE $${paramIndex++})`;
+      countQuery += whereClause;
+      query += whereClause;
+      params.push(`%${searchQuery}%`, `%${searchQuery}%`);
+    }
+
+    // Get total count for pagination
+    const countResult = await db.query(countQuery, params);
+    const totalCount = parseInt(countResult.rows[0].count);
+    const totalPages = Math.ceil(totalCount / limit);
+
+    // Add order by and pagination
+    query += " ORDER BY c.name ASC";
+    query += ` LIMIT $${paramIndex++} OFFSET $${paramIndex++}`;
+    params.push(limit, offset);
+
+    // Execute the main query
+    const result = await db.query(query, params);
 
     return NextResponse.json({
       success: true,
       data: result.rows,
+      pagination: {
+        page,
+        limit,
+        totalItems: totalCount,
+        totalPages,
+        hasNextPage: page < totalPages,
+        hasPrevPage: page > 1,
+      },
     });
   } catch (error) {
     console.error("Error fetching categories:", error);

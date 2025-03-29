@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { H1, P } from "@/components/ui/typography";
 import { Button } from "@/components/ui/button";
-import { Download, Filter, ArrowUpDown } from "lucide-react";
+import { ArrowUpDown } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -54,17 +54,31 @@ export default function TransactionsPage() {
   const [selectedTransaction, setSelectedTransaction] =
     useState<UiTransaction | null>(null);
   const [detailsOpen, setDetailsOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
 
-  // Use hooks instead of direct API calls
+  // Use hooks instead of direct API calls with pagination
   const {
     transactions,
     isLoading: transactionsLoading,
     updateTransaction,
     deleteTransaction,
+    addTransaction,
     totalIncome,
     totalExpenses,
     netBalance,
     transactionCount,
+    // Pagination related properties and functions
+    pagination,
+    pageSize,
+    goToPage,
+    nextPage,
+    previousPage,
+    changePageSize,
+    // Filters
+    filters,
+    applyFilters,
+    resetFilters,
   } = useTransactions();
 
   const { categories, isLoading: categoriesLoading } = useCategories();
@@ -85,6 +99,47 @@ export default function TransactionsPage() {
       parent_id: cat.parentId,
       is_parent: cat.isParent,
     }));
+  };
+
+  // Handle search input with debounce
+  useEffect(() => {
+    // Set a timer to update the debounced value after 500ms
+    const timer = setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery);
+      if (searchQuery !== debouncedSearchQuery) {
+        applyFilters({ search: searchQuery.trim() || null });
+      }
+    }, 500);
+
+    // Clear timeout if the search query changes before the timer expires
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  // Update the search handler to just update the state
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchQuery(e.target.value);
+  };
+
+  // Handle category filter changes
+  const handleCategoryChange = (value: string) => {
+    applyFilters({ category: value === "all" ? null : value });
+  };
+
+  // Handle date range filter changes
+  const handleDateRangeChange = (value: string) => {
+    applyFilters({ dateRange: value === "all" ? null : value });
+  };
+
+  // Handle status filter changes
+  const handleStatusChange = (value: string) => {
+    applyFilters({ status: value === "all" ? null : value });
+  };
+
+  // Handle reset filters
+  const handleResetFilters = () => {
+    setSearchQuery("");
+    setDebouncedSearchQuery("");
+    resetFilters();
   };
 
   // Action handlers
@@ -146,6 +201,50 @@ export default function TransactionsPage() {
   // Show loading state when waiting for data
   const isLoading = transactionsLoading || categoriesLoading;
 
+  // Create array of page numbers for pagination
+  const getPageNumbers = () => {
+    if (!pagination) return [];
+
+    const { page, totalPages } = pagination;
+    const delta = 1; // Number of pages to show on each side of current page
+
+    // Always show first page, last page, and pages around current page
+    const pages = [];
+
+    // Add first page
+    pages.push(1);
+
+    // Add pages around current page
+    for (
+      let i = Math.max(2, page - delta);
+      i <= Math.min(totalPages - 1, page + delta);
+      i++
+    ) {
+      pages.push(i);
+    }
+
+    // Add last page if more than 1 page
+    if (totalPages > 1) {
+      pages.push(totalPages);
+    }
+
+    // Add ellipsis indicators
+    const result = [];
+    let prev = 0;
+
+    for (const p of pages) {
+      if (prev + 1 !== p) {
+        result.push(-prev); // Negative values represent ellipsis after this page
+      }
+      result.push(p);
+      prev = p;
+    }
+
+    return result;
+  };
+
+  const pageNumbers = getPageNumbers();
+
   return (
     <div className="p-4 sm:p-6 md:p-8">
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6 sm:mb-8">
@@ -156,35 +255,41 @@ export default function TransactionsPage() {
           </P>
         </div>
         <div className="flex items-center gap-2 sm:gap-4">
-          <Button variant="outline" size="sm" className="text-xs sm:text-sm">
-            <Download className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
-            Export
-          </Button>
-          <AddTransactionDialog />
+          <AddTransactionDialog addTransaction={addTransaction} />
         </div>
       </div>
 
-      {/* Filters */}
+      {/* Filters - Updated with handlers */}
       <div className="flex flex-col gap-3 mb-4 sm:mb-6">
-        <div className="w-full">
-          <Input placeholder="Search transactions..." className="text-sm" />
+        <div className="w-full flex gap-2">
+          <Input
+            placeholder="Search transactions..."
+            className="text-sm w-full"
+            value={searchQuery}
+            onChange={handleSearchChange}
+          />
         </div>
         <div className="flex flex-wrap gap-2 sm:gap-4">
-          <Select defaultValue="all">
+          <Select
+            value={filters.category || "all"}
+            onValueChange={handleCategoryChange}
+          >
             <SelectTrigger className="w-full sm:w-[180px] text-xs sm:text-sm h-9">
               <SelectValue placeholder="Category" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Categories</SelectItem>
-              <SelectItem value="food">Food</SelectItem>
-              <SelectItem value="income">Income</SelectItem>
-              <SelectItem value="entertainment">Entertainment</SelectItem>
-              <SelectItem value="transportation">Transportation</SelectItem>
-              <SelectItem value="utilities">Utilities</SelectItem>
-              <SelectItem value="shopping">Shopping</SelectItem>
+              {categories.map((category) => (
+                <SelectItem key={category.id} value={category.id}>
+                  {category.name}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
-          <Select defaultValue="all">
+          <Select
+            value={filters.dateRange || "all"}
+            onValueChange={handleDateRangeChange}
+          >
             <SelectTrigger className="w-full sm:w-[180px] text-xs sm:text-sm h-9">
               <SelectValue placeholder="Date Range" />
             </SelectTrigger>
@@ -197,10 +302,69 @@ export default function TransactionsPage() {
               <SelectItem value="custom">Custom Range</SelectItem>
             </SelectContent>
           </Select>
-          <Button variant="outline" size="icon" className="h-9 w-9">
-            <Filter className="h-3 w-3 sm:h-4 sm:w-4" />
-          </Button>
+          <Select
+            value={filters.status || "all"}
+            onValueChange={handleStatusChange}
+          >
+            <SelectTrigger className="w-full sm:w-[180px] text-xs sm:text-sm h-9">
+              <SelectValue placeholder="Status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Status</SelectItem>
+              <SelectItem value="paid">Paid</SelectItem>
+              <SelectItem value="unpaid">Unpaid</SelectItem>
+            </SelectContent>
+          </Select>
+          {(filters.category ||
+            filters.dateRange ||
+            filters.search ||
+            filters.status) && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleResetFilters}
+              className="text-xs sm:text-sm h-9"
+            >
+              Clear Filters
+            </Button>
+          )}
         </div>
+
+        {/* Show active filters */}
+        {(filters.category ||
+          filters.dateRange ||
+          filters.search ||
+          filters.status) && (
+          <div className="flex flex-wrap gap-2 mt-2">
+            <p className="text-xs text-muted-foreground">Active filters:</p>
+            {filters.category && (
+              <Badge variant="outline" className="text-xs">
+                Category:{" "}
+                {categories.find((c) => c.id === filters.category)?.name ||
+                  filters.category}
+              </Badge>
+            )}
+            {filters.dateRange && (
+              <Badge variant="outline" className="text-xs">
+                Date:{" "}
+                {filters.dateRange.charAt(0).toUpperCase() +
+                  filters.dateRange.slice(1)}
+              </Badge>
+            )}
+            {filters.search && (
+              <Badge variant="outline" className="text-xs">
+                Search: {filters.search}
+              </Badge>
+            )}
+            {filters.status && (
+              <Badge variant="outline" className="text-xs">
+                Status:{" "}
+                {filters.status.charAt(0).toUpperCase() +
+                  filters.status.slice(1)}
+              </Badge>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Transactions Table - Responsive Layout */}
@@ -307,33 +471,86 @@ export default function TransactionsPage() {
         </Table>
       </div>
 
-      {/* Pagination */}
-      <div className="mt-2 sm:mt-4">
-        <Pagination>
-          <PaginationContent className="text-xs sm:text-sm">
-            <PaginationItem>
-              <PaginationPrevious href="#" />
-            </PaginationItem>
-            <PaginationItem>
-              <PaginationLink href="#" isActive>
-                1
-              </PaginationLink>
-            </PaginationItem>
-            <PaginationItem>
-              <PaginationLink href="#">2</PaginationLink>
-            </PaginationItem>
-            <PaginationItem>
-              <PaginationLink href="#">3</PaginationLink>
-            </PaginationItem>
-            <PaginationItem>
-              <PaginationEllipsis />
-            </PaginationItem>
-            <PaginationItem>
-              <PaginationNext href="#" />
-            </PaginationItem>
-          </PaginationContent>
-        </Pagination>
-      </div>
+      {/* Pagination - Updated with dynamic data */}
+      {pagination && pagination.totalPages > 1 && (
+        <div className="mt-2 sm:mt-4 flex items-center justify-between">
+          <div className="text-sm text-muted-foreground">
+            Showing {(pagination.page - 1) * pagination.limit + 1} to{" "}
+            {Math.min(
+              pagination.page * pagination.limit,
+              pagination.totalItems
+            )}{" "}
+            of {pagination.totalItems} transactions
+          </div>
+          <Pagination>
+            <PaginationContent className="text-xs sm:text-sm">
+              <PaginationItem>
+                <PaginationPrevious
+                  onClick={() => previousPage()}
+                  className={
+                    !pagination.hasPrevPage
+                      ? "pointer-events-none opacity-50"
+                      : "cursor-pointer"
+                  }
+                />
+              </PaginationItem>
+
+              {pageNumbers.map((pageNumber, index) => {
+                // If negative, it's an ellipsis indicator
+                if (pageNumber < 0) {
+                  return (
+                    <PaginationItem key={`ellipsis-${index}`}>
+                      <PaginationEllipsis />
+                    </PaginationItem>
+                  );
+                }
+
+                return (
+                  <PaginationItem key={pageNumber}>
+                    <PaginationLink
+                      onClick={() => goToPage(pageNumber)}
+                      isActive={pageNumber === pagination.page}
+                    >
+                      {pageNumber}
+                    </PaginationLink>
+                  </PaginationItem>
+                );
+              })}
+
+              <PaginationItem>
+                <PaginationNext
+                  onClick={() => nextPage()}
+                  className={
+                    !pagination.hasNextPage
+                      ? "pointer-events-none opacity-50"
+                      : "cursor-pointer"
+                  }
+                />
+              </PaginationItem>
+            </PaginationContent>
+          </Pagination>
+
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-muted-foreground">
+              Items per page:
+            </span>
+            <Select
+              value={pageSize.toString()}
+              onValueChange={(value) => changePageSize(parseInt(value))}
+            >
+              <SelectTrigger className="w-16 h-8">
+                <SelectValue placeholder={pageSize} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="5">5</SelectItem>
+                <SelectItem value="10">10</SelectItem>
+                <SelectItem value="20">20</SelectItem>
+                <SelectItem value="50">50</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+      )}
 
       {/* Summary Section */}
       <div className="mt-6 sm:mt-8 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">

@@ -8,14 +8,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import {
-  Download,
-  TrendingDown,
-  Loader2,
-  DollarSign,
-  BarChart3,
-} from "lucide-react";
+import { Loader2, DollarSign, BarChart3, TrendingDown } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useFinancialOverview } from "@/hooks/useFinancialOverview";
 import useCurrency from "@/hooks/useCurrency";
@@ -102,38 +95,32 @@ export function Overview({ period }: OverviewProps) {
               Summary for {overview.period.label}
             </CardDescription>
           </div>
-          <Button variant="outline" size="sm">
-            <Download className="h-4 w-4 mr-2" />
-            Export
-          </Button>
         </CardHeader>
         <CardContent>
           {/* Health Score */}
           <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-8">
-            <div className="md:col-span-1 flex flex-col items-center p-4 border rounded-lg">
-              <p className="text-xs text-muted-foreground mb-1">Health Score</p>
+            <div className="md:col-span-1 flex flex-col items-center p-4 border rounded-lg h-full justify-between">
+              <p className="text-xs text-muted-foreground">Health Score</p>
               <div
-                className={`text-4xl font-bold text-center ${getHealthScoreColor(
+                className={`text-4xl font-bold text-center my-auto py-2 ${getHealthScoreColor(
                   financialHealth.score
                 )}`}
               >
                 {financialHealth.score}
                 <span className="text-lg font-normal">/100</span>
               </div>
-              <div className="text-xs text-center mt-3 text-muted-foreground">
+              <div className="text-xs text-center text-muted-foreground">
                 {financialHealth.description}
               </div>
             </div>
 
             <div className="md:col-span-4 grid grid-cols-2 sm:grid-cols-4 gap-4">
-              <div className="flex flex-col items-center p-4 border rounded-lg">
-                <p className="text-xs text-muted-foreground mb-1">
-                  Net Cash Flow
-                </p>
-                <p className="text-3xl font-semibold text-center">
+              <div className="flex flex-col items-center p-4 border rounded-lg h-full justify-between">
+                <p className="text-xs text-muted-foreground">Net Cash Flow</p>
+                <p className="text-3xl font-semibold text-center my-auto py-2">
                   {formatAmount(Math.abs(financialHealth.netIncome))}
                 </p>
-                <div className="mt-auto pt-3">
+                <div>
                   <Badge
                     className={
                       financialHealth.netIncome >= 0
@@ -146,14 +133,12 @@ export function Overview({ period }: OverviewProps) {
                 </div>
               </div>
 
-              <div className="flex flex-col items-center p-4 border rounded-lg">
-                <p className="text-xs text-muted-foreground mb-1">
-                  Savings Rate
-                </p>
-                <p className="text-3xl font-semibold text-center">
+              <div className="flex flex-col items-center p-4 border rounded-lg h-full justify-between">
+                <p className="text-xs text-muted-foreground">Savings Rate</p>
+                <p className="text-3xl font-semibold text-center my-auto py-2">
                   {financialHealth.savingsRate.toFixed(1)}%
                 </p>
-                <div className="mt-auto pt-3">
+                <div>
                   <Badge
                     className={
                       financialHealth.savingsRate >= 20
@@ -172,14 +157,12 @@ export function Overview({ period }: OverviewProps) {
                 </div>
               </div>
 
-              <div className="flex flex-col items-center p-4 border rounded-lg">
-                <p className="text-xs text-muted-foreground mb-1">
-                  Expense Ratio
-                </p>
-                <p className="text-3xl font-semibold text-center">
+              <div className="flex flex-col items-center p-4 border rounded-lg h-full justify-between">
+                <p className="text-xs text-muted-foreground">Expense Ratio</p>
+                <p className="text-3xl font-semibold text-center my-auto py-2">
                   {financialHealth.expenseToIncomeRatio.toFixed(1)}%
                 </p>
-                <div className="mt-auto pt-3">
+                <div>
                   <Badge
                     className={
                       financialHealth.expenseToIncomeRatio <= 70
@@ -198,14 +181,12 @@ export function Overview({ period }: OverviewProps) {
                 </div>
               </div>
 
-              <div className="flex flex-col items-center p-4 border rounded-lg">
-                <p className="text-xs text-muted-foreground mb-1">
-                  Monthly Change
-                </p>
-                <p className="text-3xl font-semibold text-center">
+              <div className="flex flex-col items-center p-4 border rounded-lg h-full justify-between">
+                <p className="text-xs text-muted-foreground">Monthly Change</p>
+                <p className="text-3xl font-semibold text-center my-auto py-2">
                   {Math.abs(financialHealth.monthlyChange).toFixed(1)}%
                 </p>
-                <div className="mt-auto pt-3">
+                <div>
                   <Badge
                     className={
                       financialHealth.budgetStatus === "On track"

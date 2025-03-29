@@ -16,15 +16,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Button } from "@/components/ui/button";
-import {
-  Download,
-  Plus,
-  Minus,
-  ChevronDown,
-  ChevronRight,
-  Loader2,
-} from "lucide-react";
+import { Plus, Minus, ChevronDown, ChevronRight, Loader2 } from "lucide-react";
 import { useIncomeStatement } from "@/hooks/useIncomeStatement";
 import useCurrency from "@/hooks/useCurrency";
 
@@ -120,10 +112,6 @@ export function IncomeStatement({ period }: IncomeStatementProps) {
             Financial summary for {incomeStatement.periodLabel}
           </CardDescription>
         </div>
-        <Button variant="outline" size="sm">
-          <Download className="h-4 w-4 mr-2" />
-          Export
-        </Button>
       </CardHeader>
       <CardContent>
         <div className="overflow-x-auto">
