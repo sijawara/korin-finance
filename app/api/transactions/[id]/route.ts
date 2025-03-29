@@ -1,16 +1,16 @@
-import { NextResponse } from "next/server";
+import { NextResponse, NextRequest } from "next/server";
 import db from "@/lib/init/db";
 import { Transaction } from "@/types";
 import { verifyToken } from "@/lib/auth/verify-token";
 
-interface Context {
-  params: {
+type RouteParams = {
+  params: Promise<{
     id: string;
-  };
-}
+  }>;
+};
 
 // GET /api/transactions/:id - Fetch a single transaction by ID
-export async function GET(request: Request, context: Context) {
+export async function GET(request: NextRequest, props: RouteParams) {
   try {
     const authHeader = request.headers.get("authorization");
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
@@ -24,7 +24,8 @@ export async function GET(request: Request, context: Context) {
     const decodedToken = await verifyToken(token);
     const profile_id = decodedToken.uid;
 
-    const { id } = context.params;
+    const params = await props.params;
+    const { id } = params;
 
     // Get the transaction by ID and ensure it belongs to the authenticated user
     const result = await db.query(
@@ -48,7 +49,10 @@ export async function GET(request: Request, context: Context) {
       data: result.rows[0] as Transaction,
     });
   } catch (error) {
-    console.error(`Error fetching transaction ${context.params.id}:`, error);
+    console.error(
+      `Error fetching transaction ${(await props.params).id}:`,
+      error
+    );
     return NextResponse.json(
       { success: false, message: "Failed to fetch transaction" },
       { status: 500 }
@@ -57,7 +61,7 @@ export async function GET(request: Request, context: Context) {
 }
 
 // PATCH /api/transactions/:id - Update a transaction
-export async function PATCH(request: Request, context: Context) {
+export async function PATCH(request: NextRequest, props: RouteParams) {
   try {
     const authHeader = request.headers.get("authorization");
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
@@ -71,7 +75,9 @@ export async function PATCH(request: Request, context: Context) {
     const decodedToken = await verifyToken(token);
     const profile_id = decodedToken.uid;
 
-    const { id } = context.params;
+    const params = await props.params;
+    const { id } = params;
+
     const body = await request.json();
     const { date, description, amount, notes, category_id } = body;
     let { status } = body;
@@ -117,7 +123,10 @@ export async function PATCH(request: Request, context: Context) {
       data: result.rows[0] as Transaction,
     });
   } catch (error) {
-    console.error(`Error updating transaction ${context.params.id}:`, error);
+    console.error(
+      `Error updating transaction ${(await props.params).id}:`,
+      error
+    );
     return NextResponse.json(
       { success: false, message: "Failed to update transaction" },
       { status: 500 }
@@ -126,7 +135,7 @@ export async function PATCH(request: Request, context: Context) {
 }
 
 // DELETE /api/transactions/:id - Delete a transaction
-export async function DELETE(request: Request, context: Context) {
+export async function DELETE(request: NextRequest, props: RouteParams) {
   try {
     const authHeader = request.headers.get("authorization");
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
@@ -140,7 +149,8 @@ export async function DELETE(request: Request, context: Context) {
     const decodedToken = await verifyToken(token);
     const profile_id = decodedToken.uid;
 
-    const { id } = context.params;
+    const params = await props.params;
+    const { id } = params;
 
     // Delete the transaction, ensuring it belongs to the authenticated user
     const result = await db.query(
@@ -161,7 +171,10 @@ export async function DELETE(request: Request, context: Context) {
       message: "Transaction deleted successfully",
     });
   } catch (error) {
-    console.error(`Error deleting transaction ${context.params.id}:`, error);
+    console.error(
+      `Error deleting transaction ${(await props.params).id}:`,
+      error
+    );
     return NextResponse.json(
       { success: false, message: "Failed to delete transaction" },
       { status: 500 }
