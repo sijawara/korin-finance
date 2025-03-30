@@ -4,11 +4,11 @@ import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Skeleton } from "@/components/ui/skeleton";
 
-export default function DashboardPage() {
+export default function FinancePage() {
   const router = useRouter();
 
   useEffect(() => {
-    router.push("/dashboard/reports");
+    router.push("/finance/reports");
   }, [router]);
 
   // Show a loading skeleton while redirecting

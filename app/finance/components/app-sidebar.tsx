@@ -11,24 +11,24 @@ const defaultNavItems = {
   navMain: [
     {
       title: "Reports",
-      url: "/dashboard/reports",
+      url: "/finance/reports",
       iconName: "BarChart3",
     },
     {
       title: "Transactions",
-      url: "/dashboard/transactions",
+      url: "/finance/transactions",
       iconName: "Wallet",
     },
     {
       title: "Categories",
-      url: "/dashboard/categories",
+      url: "/finance/categories",
       iconName: "Tag",
     },
   ],
   navSecondary: [
     {
       title: "Settings",
-      url: "/dashboard/settings",
+      url: "/finance/settings",
       iconName: "Settings",
     },
   ],

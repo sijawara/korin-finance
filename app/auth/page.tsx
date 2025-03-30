@@ -83,7 +83,7 @@ export default function AuthPage() {
     try {
       await signInWithEmailAndPassword(auth, data.email, data.password);
       toast.success("Logged in successfully");
-      router.push("/dashboard");
+      router.push("/finance");
     } catch (error: unknown) {
       console.error(error);
       const authError = error as AuthError;
@@ -99,7 +99,7 @@ export default function AuthPage() {
     try {
       await createUserWithEmailAndPassword(auth, data.email, data.password);
       toast.success("Account created successfully");
-      router.push("/dashboard");
+      router.push("/finance");
     } catch (error: unknown) {
       console.error(error);
       const authError = error as AuthError;
@@ -115,7 +115,7 @@ export default function AuthPage() {
     try {
       await signInWithPopup(auth, googleProvider);
       toast.success("Logged in with Google successfully");
-      router.push("/dashboard");
+      router.push("/finance");
     } catch (error: unknown) {
       console.error(error);
       const authError = error as AuthError;
