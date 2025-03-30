@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import db from "@/lib/init/db";
 import { TransactionSummary } from "@/types";
 import { verifyToken } from "@/lib/auth/verify-token";
+import { getMetadata } from "@/lib/utils/api-utils";
 
 // GET /api/transactions/summary - Get transaction summary statistics
 export async function GET(request: Request) {
@@ -49,12 +50,16 @@ export async function GET(request: Request) {
       net_balance: 0,
     };
 
+    // Get user currency metadata
+    const currencyMeta = await getMetadata(profile_id);
+
     return NextResponse.json({
       success: true,
       data: summary,
       meta: {
         startDate,
         endDate,
+        currency: currencyMeta.currency,
       },
     });
   } catch (error) {

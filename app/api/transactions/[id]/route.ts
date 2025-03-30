@@ -2,6 +2,7 @@ import { NextResponse, NextRequest } from "next/server";
 import db from "@/lib/init/db";
 import { Transaction } from "@/types";
 import { verifyToken } from "@/lib/auth/verify-token";
+import { getMetadata } from "@/lib/utils/api-utils";
 
 type RouteParams = {
   params: Promise<{
@@ -44,9 +45,13 @@ export async function GET(request: NextRequest, props: RouteParams) {
       );
     }
 
+    // Get user currency metadata
+    const meta = await getMetadata(profile_id);
+
     return NextResponse.json({
       success: true,
       data: result.rows[0] as Transaction,
+      meta,
     });
   } catch (error) {
     console.error(

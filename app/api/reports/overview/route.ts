@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import db from "@/lib/init/db";
 import { verifyToken } from "@/lib/auth/verify-token";
+import { getMetadata } from "@/lib/utils/api-utils";
 
 // Define the return type for the financial overview data
 export type FinancialOverviewData = {
@@ -281,9 +282,13 @@ export async function GET(request: Request) {
       },
     };
 
+    // Get user currency metadata
+    const meta = await getMetadata(profile_id);
+
     return NextResponse.json({
       success: true,
       data: overview,
+      meta,
     });
   } catch (error) {
     console.error("Error generating financial overview:", error);

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import db from "@/lib/init/db";
 import { verifyToken } from "@/lib/auth/verify-token";
+import { getMetadata } from "@/lib/utils/api-utils";
 
 // GET /api/categories - Fetch all categories
 export async function GET(request: Request) {
@@ -82,6 +83,9 @@ export async function GET(request: Request) {
     // Execute the main query
     const result = await db.query(query, params);
 
+    // Get user currency metadata
+    const meta = await getMetadata(profile_id);
+
     return NextResponse.json({
       success: true,
       data: result.rows,
@@ -93,6 +97,7 @@ export async function GET(request: Request) {
         hasNextPage: page < totalPages,
         hasPrevPage: page > 1,
       },
+      meta,
     });
   } catch (error) {
     console.error("Error fetching categories:", error);
