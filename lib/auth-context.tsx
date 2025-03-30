@@ -29,7 +29,7 @@ const AuthContext = createContext<AuthContextType>({
 export const useAuth = () => useContext(AuthContext);
 
 // Protected route paths (require authentication)
-const protectedPaths = ["/dashboard"];
+const protectedPaths = ["/finance"];
 
 // Public paths (no authentication required)
 const publicPaths = ["/", "/auth"];
@@ -93,7 +93,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         router.push("/auth");
       } else if (user && isPublicRoute && pathname === "/auth") {
         // Redirect to dashboard if user is already authenticated and trying to access auth page
-        router.push("/dashboard");
+        router.push("/finance");
       }
     }
   }, [user, loading, pathname, router]);

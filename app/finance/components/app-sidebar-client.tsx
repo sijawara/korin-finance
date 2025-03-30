@@ -100,7 +100,7 @@ export function AppSidebarClient({
               asChild
               className="data-[slot=sidebar-menu-button]:!p-1.5"
             >
-              <Link href="/dashboard/reports" className="flex items-center">
+              <Link href="/finance/reports" className="flex items-center">
                 <KorinAILogo
                   size={28}
                   className="min-w-7 min-h-7"
