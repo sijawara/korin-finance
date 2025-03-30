@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import db from "@/lib/init/db";
 import { Transaction } from "@/types";
 import { verifyToken } from "@/lib/auth/verify-token";
+import { getMetadata } from "@/lib/utils/api-utils";
 
 // GET /api/transactions - Fetch all transactions
 export async function GET(request: Request) {
@@ -110,6 +111,9 @@ export async function GET(request: Request) {
 
     const result = await db.query(sql, params);
 
+    // Get user currency metadata
+    const meta = await getMetadata(profile_id);
+
     return NextResponse.json({
       success: true,
       data: result.rows as Transaction[],
@@ -121,6 +125,7 @@ export async function GET(request: Request) {
         hasNextPage: page < totalPages,
         hasPrevPage: page > 1,
       },
+      meta,
     });
   } catch (error) {
     console.error("Error fetching transactions:", error);

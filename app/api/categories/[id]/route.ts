@@ -1,6 +1,7 @@
 import { NextResponse, NextRequest } from "next/server";
 import db from "@/lib/init/db";
 import { verifyToken } from "@/lib/auth/verify-token";
+import { getMetadata } from "@/lib/utils/api-utils";
 
 type RouteParams = {
   params: Promise<{
@@ -43,9 +44,13 @@ export async function GET(request: NextRequest, props: RouteParams) {
       );
     }
 
+    // Get user currency metadata
+    const meta = await getMetadata(profile_id);
+
     return NextResponse.json({
       success: true,
       data: result.rows[0],
+      meta,
     });
   } catch (error) {
     console.error(`Error fetching category ${(await props.params).id}:`, error);

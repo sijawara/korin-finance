@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import db from "@/lib/init/db";
 import { verifyToken } from "@/lib/auth/verify-token";
+import { getMetadata } from "@/lib/utils/api-utils";
 
 // Define the return type for the categories data
 export type CategoriesData = {
@@ -164,9 +165,13 @@ export async function GET(request: Request) {
       },
     };
 
+    // Get user currency metadata
+    const meta = await getMetadata(profile_id);
+
     return NextResponse.json({
       success: true,
       data: categoriesData,
+      meta,
     });
   } catch (error) {
     console.error("Error generating categories data:", error);

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import db from "../../../../lib/init/db";
 import { verifyToken } from "../../../../lib/auth/verify-token";
+import { getMetadata } from "@/lib/utils/api-utils";
 
 export async function GET(req: NextRequest) {
   try {
@@ -171,6 +172,9 @@ export async function GET(req: NextRequest) {
       receivableTransactionsResult.rows.map(formatTransaction);
     const payableTxns = payableTransactionsResult.rows.map(formatTransaction);
 
+    // Get user currency metadata
+    const meta = await getMetadata(profileId);
+
     return NextResponse.json({
       success: true,
       receivable: {
@@ -192,6 +196,7 @@ export async function GET(req: NextRequest) {
         transactions: payableTxns,
       },
       periodLabel: getPeriodLabel(period),
+      meta,
     });
   } catch (error: unknown) {
     console.error("Error in accounts report API:", error);

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import db from "@/lib/init/db";
 import { verifyToken } from "@/lib/auth/verify-token";
+import { getMetadata } from "@/lib/utils/api-utils";
 
 // Define the return type for the income statement
 export type IncomeStatementData = {
@@ -196,9 +197,13 @@ export async function GET(request: Request) {
       periodLabel,
     };
 
+    // Get user currency metadata
+    const meta = await getMetadata(profile_id);
+
     return NextResponse.json({
       success: true,
       data: incomeStatement,
+      meta,
     });
   } catch (error) {
     console.error("Error generating income statement:", error);
