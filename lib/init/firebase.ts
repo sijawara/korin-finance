@@ -40,9 +40,7 @@ const realtimeDb = getDatabase(app);
 // Initialize Analytics with support check
 let analytics: Analytics | null = null;
 if (typeof window !== "undefined") {
-  isSupported().then(
-    (isSupported: boolean) => isSupported && (analytics = getAnalytics(app))
-  );
+  isSupported().then((yes) => yes && (analytics = getAnalytics(app)));
 }
 
 export { app, auth, db, storage, realtimeDb, analytics, googleProvider };
