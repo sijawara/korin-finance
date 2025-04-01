@@ -87,6 +87,16 @@ const formSchema = z.object({
         message: "Amount cannot be zero.",
       })
   ),
+  tax_amount: z.preprocess(
+    // Convert empty string to undefined
+    (val) => (val === "" ? undefined : val),
+    // Validate as a number or undefined
+    z
+      .number({
+        invalid_type_error: "Tax amount must be a number",
+      })
+      .optional()
+  ),
   category: z.string().min(1, {
     message: "Please select a category.",
   }),
@@ -106,6 +116,7 @@ type AddTransactionDialogProps = {
   addTransaction?: (transaction: {
     description: string;
     amount: number;
+    tax_amount?: number;
     categoryId: string;
     date: string;
     notes?: string;
@@ -262,6 +273,7 @@ export function AddTransactionDialog({
     defaultValues: {
       description: "",
       amount: undefined,
+      tax_amount: undefined,
       category: "",
       date: new Date(),
       notes: "",
@@ -284,6 +296,7 @@ export function AddTransactionDialog({
         const transactionData = {
           description: values.description,
           amount: finalAmount,
+          tax_amount: values.tax_amount,
           categoryId: values.category,
           date: values.date.toISOString(),
           notes: values.notes || "",
@@ -303,6 +316,7 @@ export function AddTransactionDialog({
             id: string;
             description: string;
             amount: number;
+            tax_amount?: number;
             category_id: string;
             date: string;
             notes?: string;
@@ -320,6 +334,7 @@ export function AddTransactionDialog({
               body: JSON.stringify({
                 description: values.description,
                 amount: finalAmount,
+                tax_amount: values.tax_amount,
                 category_id: values.category,
                 date: values.date.toISOString(),
                 notes: values.notes || "",
@@ -452,6 +467,46 @@ export function AddTransactionDialog({
                 )}
               />
             </div>
+
+            {/* Tax Amount */}
+            <FormField
+              control={form.control}
+              name="tax_amount"
+              render={({ field: { value, onChange, ...fieldProps } }) => (
+                <FormItem>
+                  <FormLabel>Tax Amount (Optional)</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      placeholder="Enter tax amount"
+                      value={
+                        value === 0
+                          ? ""
+                          : value === undefined
+                          ? ""
+                          : Math.abs(Number(value))
+                      }
+                      onChange={(e) => {
+                        const inputValue = e.target.value;
+                        onChange(
+                          inputValue === ""
+                            ? undefined
+                            : Math.abs(parseFloat(inputValue))
+                        );
+                      }}
+                      className={
+                        selectedCategoryType === "expense"
+                          ? "border-red-300 focus-visible:ring-red-200"
+                          : ""
+                      }
+                      {...fieldProps}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
             {/* Category and Status in the same row */}
             <div className="grid grid-cols-2 gap-4">

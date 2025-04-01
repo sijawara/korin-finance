@@ -152,7 +152,7 @@ export async function POST(request: Request) {
     const profile_id = decodedToken.uid;
 
     const body = await request.json();
-    const { date, description, amount, notes, category_id } = body;
+    const { date, description, amount, notes, category_id, tax_amount } = body;
     let { status } = body;
 
     // Validate required fields
@@ -185,10 +185,19 @@ export async function POST(request: Request) {
     // Create the new transaction
     const result = await db.query(
       `INSERT INTO transactions 
-        (date, description, amount, status, notes, category_id, profile_id) 
-       VALUES ($1, $2, $3, $4, $5, $6, $7) 
+        (date, description, amount, status, notes, category_id, profile_id, tax_amount) 
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8) 
        RETURNING *`,
-      [date, description, amount, status, notes, category_id, profile_id]
+      [
+        date,
+        description,
+        amount,
+        status,
+        notes,
+        category_id,
+        profile_id,
+        tax_amount || null,
+      ]
     );
 
     return NextResponse.json(

@@ -84,7 +84,7 @@ export async function PATCH(request: NextRequest, props: RouteParams) {
     const { id } = params;
 
     const body = await request.json();
-    const { date, description, amount, notes, category_id } = body;
+    const { date, description, amount, notes, category_id, tax_amount } = body;
     let { status } = body;
 
     // Format and validate status if provided
@@ -109,10 +109,21 @@ export async function PATCH(request: NextRequest, props: RouteParams) {
            amount = COALESCE($3, amount),
            status = COALESCE($4, status),
            notes = COALESCE($5, notes),
-           category_id = COALESCE($6, category_id)
-       WHERE id = $7 AND profile_id = $8
+           category_id = COALESCE($6, category_id),
+           tax_amount = COALESCE($7, tax_amount)
+       WHERE id = $8 AND profile_id = $9
        RETURNING *`,
-      [date, description, amount, status, notes, category_id, id, profile_id]
+      [
+        date,
+        description,
+        amount,
+        status,
+        notes,
+        category_id,
+        tax_amount,
+        id,
+        profile_id,
+      ]
     );
 
     // Check if transaction exists
