@@ -3,6 +3,8 @@ import { Geist, Geist_Mono } from "next/font/google";
 import { ThemeProvider } from "../components/theme-provider";
 import { AuthProvider } from "@/lib/auth-context";
 import { Toaster } from "sonner";
+import { Header } from "@/components/header";
+import { Footer } from "@/components/footer";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -40,17 +42,7 @@ export const metadata: Metadata = {
     { media: "(prefers-color-scheme: dark)", color: "#000000" },
   ],
   icons: {
-    icon: [
-      {
-        url: "/logo/KorinAILogo-Black.ico",
-        media: "(prefers-color-scheme: light)",
-      },
-      {
-        url: "/logo/KorinAILogo-White.ico",
-        media: "(prefers-color-scheme: dark)",
-      },
-    ],
-    shortcut: "/logo/KorinAILogo-Black.ico",
+    icon: "/logo/KorinAILogo-Black.ico",
     apple: "/logo/KorinAILogo-Black.png",
   },
 };
@@ -62,7 +54,14 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <head />
+      <head>
+        <link rel="icon" href="/logo/KorinAILogo-Black.ico" />
+        <link
+          rel="apple-touch-icon"
+          sizes="180x180"
+          href="/logo/KorinAILogo-Black.png"
+        />
+      </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
@@ -73,7 +72,11 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <AuthProvider>
-            {children}
+            <div className="flex flex-col min-h-screen">
+              <Header />
+              <main className="flex-1">{children}</main>
+              <Footer />
+            </div>
             <Toaster position="top-right" richColors />
           </AuthProvider>
         </ThemeProvider>

@@ -1,18 +1,18 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
+import { redirect } from "next/navigation";
 import Link from "next/link";
-import { z } from "zod";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
 import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   signInWithPopup,
-  AuthError,
 } from "firebase/auth";
 import { auth, googleProvider } from "@/lib/init/firebase";
+import { useTheme } from "next-themes";
+import { useUsernameCheck } from "@/hooks/useUsernameCheck";
+import { useDebouncedCallback } from "@/hooks/use-debounced-callback";
+import { sendConversionEvent } from "@/lib/utils/meta-pixel";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -27,165 +27,292 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { toast } from "sonner";
+import { Eye, EyeOff } from "lucide-react";
 
-// Validation schemas
-const loginSchema = z.object({
-  email: z.string().email({ message: "Please enter a valid email address" }),
-  password: z
-    .string()
-    .min(6, { message: "Password must be at least 6 characters" }),
-});
-
-const signupSchema = z
-  .object({
-    email: z.string().email({ message: "Please enter a valid email address" }),
-    password: z
-      .string()
-      .min(6, { message: "Password must be at least 6 characters" }),
-    confirmPassword: z
-      .string()
-      .min(6, { message: "Password must be at least 6 characters" }),
-  })
-  .refine((data) => data.password === data.confirmPassword, {
-    message: "Passwords do not match",
-    path: ["confirmPassword"],
-  });
-
-type LoginFormValues = z.infer<typeof loginSchema>;
-type SignupFormValues = z.infer<typeof signupSchema>;
+// Type for the registration form data
+interface FormData {
+  name: string;
+  email: string;
+  username: string;
+  password: string;
+}
 
 export default function AuthPage() {
-  const [isLoading, setIsLoading] = useState(false);
-  const router = useRouter();
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [isSuccess, setIsSuccess] = useState<boolean>(false);
+  const [showLoginPassword, setShowLoginPassword] = useState<boolean>(false);
+  const [showRegisterPassword, setShowRegisterPassword] =
+    useState<boolean>(false);
 
-  // Login form
-  const loginForm = useForm<LoginFormValues>({
-    resolver: zodResolver(loginSchema),
-    defaultValues: {
-      email: "",
-      password: "",
-    },
-  });
+  // Using useTheme to maintain consistency with the rest of the app
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { setTheme } = useTheme();
 
-  // Signup form
-  const signupForm = useForm<SignupFormValues>({
-    resolver: zodResolver(signupSchema),
-    defaultValues: {
-      email: "",
-      password: "",
-      confirmPassword: "",
-    },
-  });
+  const [username, setUsername] = useState("");
+  const { isAvailable, isLoading: usernameIsLoading } =
+    useUsernameCheck(username);
 
-  // Handle login
-  const onLogin = async (data: LoginFormValues) => {
+  useEffect(() => {
+    if (isSuccess) {
+      redirect("/finance");
+    }
+  }, [isSuccess]);
+
+  // Define a properly typed handler for the debounced username check
+  const handleUsernameChange = (value: string) => {
+    setUsername(value);
+  };
+
+  // Use the typed handler with the debounced callback
+  const debouncedSetUsername = useDebouncedCallback(handleUsernameChange, 300);
+
+  const handleLogin = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
     setIsLoading(true);
+
+    const formData = new FormData(event.currentTarget);
+    const email = formData.get("email") as string;
+    const password = formData.get("password") as string;
+
     try {
+      // Clear any existing cached data before login
+      localStorage.removeItem("cached_user_details");
+
+      // Sign in with Firebase
       const userCredential = await signInWithEmailAndPassword(
         auth,
-        data.email,
-        data.password
+        email,
+        password
       );
 
-      // Ensure we have a user before proceeding
-      if (!userCredential.user) {
-        throw new Error("Login successful but user not found");
-      }
+      // Wait for the ID token to ensure auth is fully set up
+      const idToken = await userCredential.user.getIdToken();
 
-      // Get the current user token to ensure it's cached
-      const user = userCredential.user;
-      const token = await user.getIdToken(true);
+      // Store the token in localStorage
+      localStorage.setItem("auth_token", idToken);
 
-      // Store the token in sessionStorage for immediate use
-      sessionStorage.setItem("firebase:authToken", token);
+      // Track login event
+      await sendConversionEvent({
+        event_name: "Login",
+        event_time: Math.floor(Date.now() / 1000),
+        user_data: {
+          em: [email],
+          external_id: [userCredential.user.uid],
+          client_ip_address: "", // This will be set server-side
+          client_user_agent: navigator.userAgent,
+        },
+        event_source_url: window.location.href,
+        action_source: "website",
+      });
 
-      toast.success("Logged in successfully");
+      // Wait a brief moment to ensure Firebase auth state is fully propagated
+      await new Promise((resolve) => setTimeout(resolve, 1000));
 
-      // Short delay to ensure auth state is propagated
-      await new Promise((resolve) => setTimeout(resolve, 300));
+      toast.success("Login Successful", {
+        description: "You have been logged in successfully.",
+      });
 
-      router.push("/finance");
-    } catch (error: unknown) {
-      console.error(error);
-      const authError = error as AuthError;
-      toast.error(authError.message || "Failed to login");
+      setIsSuccess(true);
+    } catch (error) {
+      console.error("Login error:", error);
+      toast.error("Login Failed", {
+        description: "Invalid email or password. Please try again.",
+      });
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Handle signup
-  const onSignup = async (data: SignupFormValues) => {
+  const handleRegister = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
     setIsLoading(true);
+
+    const formData = new FormData(event.currentTarget);
+    const registerData: FormData = {
+      name: formData.get("name") as string,
+      email: formData.get("email") as string,
+      username: formData.get("username") as string,
+      password: formData.get("password") as string,
+    };
+
     try {
+      // Clear any existing cached data
+      localStorage.removeItem("cached_user_details");
+
+      // First, create the user in Firebase
       const userCredential = await createUserWithEmailAndPassword(
         auth,
-        data.email,
-        data.password
+        registerData.email,
+        registerData.password
       );
 
-      // Ensure we have a user before proceeding
-      if (!userCredential.user) {
-        throw new Error("Account created but user not found");
+      // Wait for the ID token to ensure auth is fully set up
+      const idToken = await userCredential.user.getIdToken();
+
+      // Store the token in localStorage
+      localStorage.setItem("auth_token", idToken);
+
+      // Track registration event
+      await sendConversionEvent({
+        event_name: "CompleteRegistration",
+        event_time: Math.floor(Date.now() / 1000),
+        user_data: {
+          em: [registerData.email],
+          external_id: [userCredential.user.uid],
+          client_ip_address: "", // This will be set server-side
+          client_user_agent: navigator.userAgent,
+        },
+        custom_data: {
+          username: registerData.username,
+        },
+        event_source_url: window.location.href,
+        action_source: "website",
+      });
+
+      // Then, register the user in your backend
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_SSO_URL}/api/profile/add`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${idToken}`,
+          },
+          body: JSON.stringify(registerData),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to register user in backend");
       }
 
-      // Get the current user token to ensure it's cached
-      const user = userCredential.user;
-      const token = await user.getIdToken(true);
+      const data = await response.json();
+      console.log("User registered:", data);
 
-      // Store the token in sessionStorage for immediate use
-      sessionStorage.setItem("firebase:authToken", token);
+      // Wait a brief moment to ensure Firebase auth state is fully propagated
+      await new Promise((resolve) => setTimeout(resolve, 1000));
 
-      toast.success("Account created successfully");
+      toast.success("Registration Successful", {
+        description: "Your account has been created successfully.",
+      });
 
-      // Short delay to ensure auth state is propagated
-      await new Promise((resolve) => setTimeout(resolve, 300));
-
-      router.push("/finance");
+      setIsSuccess(true);
     } catch (error: unknown) {
-      console.error(error);
-      const authError = error as AuthError;
-      toast.error(authError.message || "Failed to create account");
+      console.error("Registration error:", error);
+
+      // Extract the error message
+      let errorMessage = "An error occurred during registration.";
+
+      if (error instanceof Error) {
+        if ("code" in error) {
+          switch ((error as { code: string }).code) {
+            case "auth/email-already-in-use":
+              errorMessage = "This email is already registered.";
+              break;
+            case "auth/invalid-email":
+              errorMessage = "Invalid email address format.";
+              break;
+            case "auth/operation-not-allowed":
+              errorMessage =
+                "Email/password accounts are not enabled. Please contact support.";
+              break;
+            case "auth/weak-password":
+              errorMessage = "Password should be at least 6 characters.";
+              break;
+            default:
+              // If we have a message from the error, use it
+              errorMessage = error.message || errorMessage;
+          }
+        } else {
+          errorMessage = error.message || errorMessage;
+        }
+      }
+
+      toast.error("Registration Failed", {
+        description: errorMessage,
+      });
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Handle Google sign-in
   const handleGoogleSignIn = async () => {
     setIsLoading(true);
     try {
-      const userCredential = await signInWithPopup(auth, googleProvider);
+      // Clear any existing cached data
+      localStorage.removeItem("cached_user_details");
 
-      // Ensure we have a user before proceeding
-      if (!userCredential.user) {
-        throw new Error("Google login successful but user not found");
+      // Sign in with Google
+      const result = await signInWithPopup(auth, googleProvider);
+      const idToken = await result.user.getIdToken();
+
+      // Store the token in localStorage
+      localStorage.setItem("auth_token", idToken);
+
+      // Track Google sign-in event
+      await sendConversionEvent({
+        event_name: "Login",
+        event_time: Math.floor(Date.now() / 1000),
+        user_data: {
+          em: result.user.email ? [result.user.email] : [],
+          external_id: [result.user.uid],
+          client_ip_address: "", // This will be set server-side
+          client_user_agent: navigator.userAgent,
+        },
+        event_source_url: window.location.href,
+        action_source: "website",
+      });
+
+      // Then, register the user in your backend
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_SSO_URL}/api/profile/add`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${idToken}`,
+          },
+          body: JSON.stringify({
+            name: result.user.displayName,
+            email: result.user.email,
+            username: result.user.uid,
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to register user in backend");
       }
 
-      // Get the current user token to ensure it's cached
-      const user = userCredential.user;
-      const token = await user.getIdToken(true);
+      const data = await response.json();
+      console.log("User registered:", data);
 
-      // Store the token in sessionStorage for immediate use
-      sessionStorage.setItem("firebase:authToken", token);
+      // Wait a brief moment to ensure Firebase auth state is fully propagated
+      await new Promise((resolve) => setTimeout(resolve, 1000));
 
-      toast.success("Logged in with Google successfully");
+      toast.success("Login Successful", {
+        description: "You have been logged in successfully.",
+      });
 
-      // Short delay to ensure auth state is propagated
-      await new Promise((resolve) => setTimeout(resolve, 300));
-
-      router.push("/finance");
+      setIsSuccess(true);
     } catch (error: unknown) {
-      console.error(error);
-      const authError = error as AuthError;
-      toast.error(authError.message || "Failed to login with Google");
+      console.error("Google sign-in error:", error);
+      let errorMessage = "Failed to sign in with Google. Please try again.";
+
+      if (error instanceof Error) {
+        errorMessage = error.message || errorMessage;
+      }
+
+      toast.error("Google Sign-in Failed", {
+        description: errorMessage,
+      });
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div className="container flex h-screen w-screen flex-col items-center justify-center">
+    <div className="container flex min-h-screen w-screen flex-col items-center justify-center py-8">
       <div className="mx-auto flex w-full flex-col justify-center space-y-6 sm:w-[350px]">
         <div className="flex flex-col space-y-2 text-center">
           <h1 className="text-2xl font-semibold tracking-tight">
@@ -211,21 +338,17 @@ export default function AuthPage() {
                   Enter your credentials to access your account
                 </CardDescription>
               </CardHeader>
-              <form onSubmit={loginForm.handleSubmit(onLogin)}>
+              <form onSubmit={handleLogin}>
                 <CardContent className="space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="email">Email</Label>
                     <Input
                       id="email"
+                      name="email"
                       type="email"
                       placeholder="email@example.com"
-                      {...loginForm.register("email")}
+                      required
                     />
-                    {loginForm.formState.errors.email && (
-                      <p className="text-xs text-red-500">
-                        {loginForm.formState.errors.email.message}
-                      </p>
-                    )}
                   </div>
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
@@ -237,16 +360,26 @@ export default function AuthPage() {
                         Forgot password?
                       </Link>
                     </div>
-                    <Input
-                      id="password"
-                      type="password"
-                      {...loginForm.register("password")}
-                    />
-                    {loginForm.formState.errors.password && (
-                      <p className="text-xs text-red-500">
-                        {loginForm.formState.errors.password.message}
-                      </p>
-                    )}
+                    <div className="relative">
+                      <Input
+                        id="password"
+                        name="password"
+                        type={showLoginPassword ? "text" : "password"}
+                        placeholder="••••••••"
+                        required
+                      />
+                      <button
+                        type="button"
+                        className="absolute right-3 top-1/2 -translate-y-1/2"
+                        onClick={() => setShowLoginPassword(!showLoginPassword)}
+                      >
+                        {showLoginPassword ? (
+                          <EyeOff className="h-4 w-4 text-gray-500" />
+                        ) : (
+                          <Eye className="h-4 w-4 text-gray-500" />
+                        )}
+                      </button>
+                    </div>
                   </div>
                 </CardContent>
                 <CardFooter className="flex flex-col space-y-3 mt-4">
@@ -296,49 +429,80 @@ export default function AuthPage() {
                   Enter your details to create a new account
                 </CardDescription>
               </CardHeader>
-              <form onSubmit={signupForm.handleSubmit(onSignup)}>
+              <form onSubmit={handleRegister}>
                 <CardContent className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="name">Full Name</Label>
+                    <Input
+                      id="name"
+                      name="name"
+                      type="text"
+                      placeholder="John Doe"
+                      required
+                    />
+                  </div>
                   <div className="space-y-2">
                     <Label htmlFor="signup-email">Email</Label>
                     <Input
                       id="signup-email"
+                      name="email"
                       type="email"
                       placeholder="email@example.com"
-                      {...signupForm.register("email")}
+                      required
                     />
-                    {signupForm.formState.errors.email && (
-                      <p className="text-xs text-red-500">
-                        {signupForm.formState.errors.email.message}
-                      </p>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="username">Username</Label>
+                    <Input
+                      id="username"
+                      name="username"
+                      type="text"
+                      placeholder="johndoe123"
+                      onChange={(e) => debouncedSetUsername(e.target.value)}
+                      required
+                    />
+                    {username && (
+                      <div className="text-xs">
+                        {usernameIsLoading ? (
+                          <span className="text-muted-foreground">
+                            Checking availability...
+                          </span>
+                        ) : isAvailable ? (
+                          <span className="text-green-500">
+                            Username is available
+                          </span>
+                        ) : (
+                          <span className="text-red-500">
+                            Username is already taken
+                          </span>
+                        )}
+                      </div>
                     )}
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="signup-password">Password</Label>
-                    <Input
-                      id="signup-password"
-                      type="password"
-                      {...signupForm.register("password")}
-                    />
-                    {signupForm.formState.errors.password && (
-                      <p className="text-xs text-red-500">
-                        {signupForm.formState.errors.password.message}
-                      </p>
-                    )}
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="signup-confirm-password">
-                      Confirm Password
-                    </Label>
-                    <Input
-                      id="signup-confirm-password"
-                      type="password"
-                      {...signupForm.register("confirmPassword")}
-                    />
-                    {signupForm.formState.errors.confirmPassword && (
-                      <p className="text-xs text-red-500">
-                        {signupForm.formState.errors.confirmPassword.message}
-                      </p>
-                    )}
+                    <div className="relative">
+                      <Input
+                        id="signup-password"
+                        name="password"
+                        type={showRegisterPassword ? "text" : "password"}
+                        placeholder="••••••••"
+                        required
+                      />
+                      <button
+                        type="button"
+                        className="absolute right-3 top-1/2 -translate-y-1/2"
+                        onClick={() =>
+                          setShowRegisterPassword(!showRegisterPassword)
+                        }
+                      >
+                        {showRegisterPassword ? (
+                          <EyeOff className="h-4 w-4 text-gray-500" />
+                        ) : (
+                          <Eye className="h-4 w-4 text-gray-500" />
+                        )}
+                      </button>
+                    </div>
                   </div>
                 </CardContent>
                 <CardFooter className="flex flex-col space-y-3 mt-4">
