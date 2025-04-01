@@ -35,10 +35,16 @@ export default function Home() {
 
         <div className="flex gap-4 items-center flex-col sm:flex-row mt-4">
           <Button asChild size="lg">
-            <Link href="/auth">Get Started</Link>
+            <Link href="/finance">Get Started</Link>
           </Button>
           <Button asChild variant="outline" size="lg">
-            <Link href="/finance">Demo Dashboard</Link>
+            <Link
+              href="https://korinai.com/dashboard"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Browse Another AI
+            </Link>
           </Button>
         </div>
       </main>
