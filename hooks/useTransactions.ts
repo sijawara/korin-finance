@@ -11,6 +11,7 @@ export type Transaction = {
   description: string;
   category_id: string;
   amount: number;
+  tax_amount?: number;
   status: "PAID" | "UNPAID";
   notes?: string;
   created_at?: string;
@@ -24,6 +25,7 @@ export type UiTransaction = {
   description: string;
   categoryId: string;
   amount: number;
+  tax_amount?: number;
   status: string;
   notes?: string;
   createdAt?: string;
@@ -98,6 +100,7 @@ export const mapApiToUiTransaction = (
   description: transaction.description,
   categoryId: transaction.category_id,
   amount: transaction.amount,
+  tax_amount: transaction.tax_amount,
   status: transaction.status.toLowerCase(),
   notes: transaction.notes,
   createdAt: transaction.created_at,
@@ -113,6 +116,7 @@ export const mapUiToApiTransaction = (
   description: transaction.description,
   category_id: transaction.categoryId,
   amount: transaction.amount,
+  tax_amount: transaction.tax_amount,
   status: transaction.status?.toUpperCase() as "PAID" | "UNPAID",
   notes: transaction.notes,
 });

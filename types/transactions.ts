@@ -3,6 +3,7 @@ export interface Transaction {
   date: Date;
   description: string;
   amount: number;
+  tax_amount?: number;
   status: string;
   notes?: string;
   category_id?: string;

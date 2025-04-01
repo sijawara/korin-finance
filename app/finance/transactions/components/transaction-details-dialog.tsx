@@ -37,6 +37,7 @@ import {
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
+import React from "react";
 
 // Define API response type
 interface ApiResponse<T> {
@@ -76,6 +77,7 @@ type Transaction = {
   description: string;
   categoryId: string;
   amount: number;
+  tax_amount?: number;
   status: string;
   notes?: string;
 };
@@ -114,6 +116,16 @@ const editFormSchema = z.object({
       .refine((val) => val !== 0, {
         message: "Amount cannot be zero.",
       })
+  ),
+  tax_amount: z.preprocess(
+    // Convert empty string to undefined
+    (val) => (val === "" ? undefined : val),
+    // Validate as a number or undefined
+    z
+      .number({
+        invalid_type_error: "Tax amount must be a number",
+      })
+      .optional()
   ),
   categoryId: z.string().min(1, {
     message: "Please select a category.",
@@ -157,6 +169,7 @@ export function TransactionDetailsDialog({
       ? {
           description: transaction.description,
           amount: Math.abs(transaction.amount),
+          tax_amount: transaction.tax_amount,
           categoryId: transaction.categoryId,
           date: new Date(transaction.date),
           notes: transaction.notes || "",
@@ -165,6 +178,7 @@ export function TransactionDetailsDialog({
       : {
           description: "",
           amount: undefined,
+          tax_amount: undefined,
           categoryId: "",
           date: new Date(),
           notes: "",
@@ -178,6 +192,7 @@ export function TransactionDetailsDialog({
       form.reset({
         description: transaction.description,
         amount: Math.abs(transaction.amount),
+        tax_amount: transaction.tax_amount,
         categoryId: transaction.categoryId,
         date: new Date(transaction.date),
         notes: transaction.notes || "",
@@ -368,6 +383,7 @@ export function TransactionDetailsDialog({
         ...transaction,
         description: values.description,
         amount: finalAmount,
+        tax_amount: values.tax_amount,
         categoryId: values.categoryId,
         date: values.date.toISOString(),
         notes: values.notes,
@@ -527,6 +543,46 @@ export function TransactionDetailsDialog({
                 />
               </div>
 
+              {/* Tax Amount */}
+              <FormField
+                control={form.control}
+                name="tax_amount"
+                render={({ field: { value, onChange, ...fieldProps } }) => (
+                  <FormItem>
+                    <FormLabel>Tax Amount (Optional)</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        placeholder="Enter tax amount"
+                        value={
+                          value === 0
+                            ? "0"
+                            : value === undefined
+                            ? ""
+                            : Math.abs(Number(value))
+                        }
+                        onChange={(e) => {
+                          const inputValue = e.target.value;
+                          onChange(
+                            inputValue === ""
+                              ? undefined
+                              : Math.abs(parseFloat(inputValue))
+                          );
+                        }}
+                        className={
+                          selectedCategoryType === "expense"
+                            ? "border-red-300 focus-visible:ring-red-200"
+                            : ""
+                        }
+                        {...fieldProps}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
               <div className="grid grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
@@ -578,7 +634,7 @@ export function TransactionDetailsDialog({
                                 parent.type.toLowerCase() === "expense"
                             )
                             .map((parent) => (
-                              <>
+                              <React.Fragment key={parent.id}>
                                 <SelectItem key={parent.id} value={parent.id}>
                                   <div className="flex items-center gap-2">
                                     <div
@@ -603,7 +659,7 @@ export function TransactionDetailsDialog({
                                     </div>
                                   </SelectItem>
                                 ))}
-                              </>
+                              </React.Fragment>
                             ))}
                         </SelectContent>
                       </Select>
@@ -723,15 +779,24 @@ export function TransactionDetailsDialog({
                   className="mt-1 p-0 h-6 min-h-0 border-none bg-transparent text-sm text-muted-foreground hover:bg-transparent hover:text-muted-foreground focus:shadow-none"
                 />
               </div>
-              <div
-                className={`text-xl font-bold ${
-                  categoryDetails?.type === "income"
-                    ? "text-green-600"
-                    : "text-red-600"
-                }`}
-              >
-                {categoryDetails?.type === "income" ? "+" : "-"}
-                {formattedAmount}
+              <div>
+                <div
+                  className={`text-xl font-bold ${
+                    categoryDetails?.type === "income"
+                      ? "text-green-600"
+                      : "text-red-600"
+                  }`}
+                >
+                  {categoryDetails?.type === "income" ? "+" : "-"}
+                  {formattedAmount}
+                </div>
+                {transaction.tax_amount !== null &&
+                  transaction.tax_amount !== undefined && (
+                    <div className="text-sm text-right text-muted-foreground">
+                      Incl. tax:{" "}
+                      {formatAmount(Math.abs(transaction.tax_amount || 0))}
+                    </div>
+                  )}
               </div>
             </div>
 

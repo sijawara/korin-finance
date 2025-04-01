@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react";
 import { H1, P } from "@/components/ui/typography";
 import { Button } from "@/components/ui/button";
-import { ArrowUpDown } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -381,17 +380,17 @@ export default function TransactionsPage() {
               <TableHead className="text-xs sm:text-sm">Category</TableHead>
               <TableHead className="text-xs sm:text-sm">Status</TableHead>
               <TableHead className="text-right text-xs sm:text-sm">
-                <div className="flex items-center justify-end">
-                  Amount
-                  <ArrowUpDown className="ml-1 sm:ml-2 h-3 w-3 sm:h-4 sm:w-4" />
-                </div>
+                Amount
+              </TableHead>
+              <TableHead className="text-right text-xs sm:text-sm">
+                Tax
               </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {isLoading ? (
               <TableRow>
-                <TableCell colSpan={5} className="h-24 text-center">
+                <TableCell colSpan={6} className="h-24 text-center">
                   <div className="flex items-center justify-center">
                     <div className="mr-2 animate-spin">
                       <svg
@@ -422,7 +421,7 @@ export default function TransactionsPage() {
               </TableRow>
             ) : transactions.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={5} className="h-24 text-center">
+                <TableCell colSpan={6} className="h-24 text-center">
                   No transactions found
                 </TableCell>
               </TableRow>
@@ -463,6 +462,11 @@ export default function TransactionsPage() {
                   >
                     {transaction.amount >= 0 ? "+" : ""}
                     {formatAmount(transaction.amount)}
+                  </TableCell>
+                  <TableCell className="text-right text-xs sm:text-sm py-2 sm:py-4 text-muted-foreground">
+                    {transaction.tax_amount
+                      ? formatAmount(Math.abs(transaction.tax_amount), true)
+                      : "-"}
                   </TableCell>
                 </TableRow>
               ))

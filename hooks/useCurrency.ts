@@ -97,10 +97,12 @@ export function useCurrency() {
         return `${currency.symbol}${formatWithSuffix(amount)}`;
       }
 
-      return amount.toLocaleString("en-US", {
-        style: "currency",
-        currency: currencyCode,
-      });
+      // For smaller amounts, use the currency symbol directly instead of the default formatting
+      return `${currency.symbol}${amount.toLocaleString("en-US", {
+        style: "decimal",
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 2,
+      })}`;
     },
     [currencyCode, currency.symbol]
   );

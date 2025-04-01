@@ -3,8 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import { ThemeProvider } from "../components/theme-provider";
 import { AuthProvider } from "@/lib/auth-context";
 import { Toaster } from "sonner";
-import { Header } from "@/components/header";
-import { Footer } from "@/components/footer";
+import { LayoutWrapper } from "@/components/layout-wrapper";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -72,11 +71,7 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <AuthProvider>
-            <div className="flex flex-col min-h-screen">
-              <Header />
-              <main className="flex-1">{children}</main>
-              <Footer />
-            </div>
+            <LayoutWrapper>{children}</LayoutWrapper>
             <Toaster position="top-right" richColors />
           </AuthProvider>
         </ThemeProvider>
