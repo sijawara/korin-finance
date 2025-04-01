@@ -164,7 +164,7 @@ export function AppSidebarClient({
           Logout
         </Button>
         <p className="text-xs text-muted-foreground">
-          © 2024 Korin Finance. All rights reserved.
+          © 2024 KorinAI Desk. All rights reserved.
         </p>
       </SidebarFooter>
     </Sidebar>

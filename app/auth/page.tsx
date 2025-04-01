@@ -81,8 +81,29 @@ export default function AuthPage() {
   const onLogin = async (data: LoginFormValues) => {
     setIsLoading(true);
     try {
-      await signInWithEmailAndPassword(auth, data.email, data.password);
+      const userCredential = await signInWithEmailAndPassword(
+        auth,
+        data.email,
+        data.password
+      );
+
+      // Ensure we have a user before proceeding
+      if (!userCredential.user) {
+        throw new Error("Login successful but user not found");
+      }
+
+      // Get the current user token to ensure it's cached
+      const user = userCredential.user;
+      const token = await user.getIdToken(true);
+
+      // Store the token in sessionStorage for immediate use
+      sessionStorage.setItem("firebase:authToken", token);
+
       toast.success("Logged in successfully");
+
+      // Short delay to ensure auth state is propagated
+      await new Promise((resolve) => setTimeout(resolve, 300));
+
       router.push("/finance");
     } catch (error: unknown) {
       console.error(error);
@@ -97,8 +118,29 @@ export default function AuthPage() {
   const onSignup = async (data: SignupFormValues) => {
     setIsLoading(true);
     try {
-      await createUserWithEmailAndPassword(auth, data.email, data.password);
+      const userCredential = await createUserWithEmailAndPassword(
+        auth,
+        data.email,
+        data.password
+      );
+
+      // Ensure we have a user before proceeding
+      if (!userCredential.user) {
+        throw new Error("Account created but user not found");
+      }
+
+      // Get the current user token to ensure it's cached
+      const user = userCredential.user;
+      const token = await user.getIdToken(true);
+
+      // Store the token in sessionStorage for immediate use
+      sessionStorage.setItem("firebase:authToken", token);
+
       toast.success("Account created successfully");
+
+      // Short delay to ensure auth state is propagated
+      await new Promise((resolve) => setTimeout(resolve, 300));
+
       router.push("/finance");
     } catch (error: unknown) {
       console.error(error);
@@ -113,8 +155,25 @@ export default function AuthPage() {
   const handleGoogleSignIn = async () => {
     setIsLoading(true);
     try {
-      await signInWithPopup(auth, googleProvider);
+      const userCredential = await signInWithPopup(auth, googleProvider);
+
+      // Ensure we have a user before proceeding
+      if (!userCredential.user) {
+        throw new Error("Google login successful but user not found");
+      }
+
+      // Get the current user token to ensure it's cached
+      const user = userCredential.user;
+      const token = await user.getIdToken(true);
+
+      // Store the token in sessionStorage for immediate use
+      sessionStorage.setItem("firebase:authToken", token);
+
       toast.success("Logged in with Google successfully");
+
+      // Short delay to ensure auth state is propagated
+      await new Promise((resolve) => setTimeout(resolve, 300));
+
       router.push("/finance");
     } catch (error: unknown) {
       console.error(error);
@@ -130,7 +189,7 @@ export default function AuthPage() {
       <div className="mx-auto flex w-full flex-col justify-center space-y-6 sm:w-[350px]">
         <div className="flex flex-col space-y-2 text-center">
           <h1 className="text-2xl font-semibold tracking-tight">
-            Welcome to Finance Korin
+            Welcome to KorinAI Desk
           </h1>
           <p className="text-sm text-muted-foreground">
             Your personal finance management app

@@ -38,6 +38,7 @@ export function WithAuth({ children }: WithAuthProps) {
   const { user } = useAuth();
   const [isTokenLoading, setIsTokenLoading] = useState(false);
   const [authToken, setAuthToken] = useState<string | null>(null);
+  const [tokenExpiryTime, setTokenExpiryTime] = useState<number | null>(null);
 
   // Get the auth token from Firebase
   const getAuthToken = useCallback(
@@ -47,10 +48,26 @@ export function WithAuth({ children }: WithAuthProps) {
         return null;
       }
 
+      // If we have a valid token and not forcing refresh, use it
+      const currentTime = Date.now();
+      if (
+        authToken &&
+        tokenExpiryTime &&
+        currentTime < tokenExpiryTime &&
+        !forceRefresh
+      ) {
+        return authToken;
+      }
+
       try {
         setIsTokenLoading(true);
         const token = await user.getIdToken(forceRefresh);
         setAuthToken(token);
+
+        // Firebase tokens expire in 1 hour (3600 seconds)
+        // Set our expiry time to 50 minutes to be safe
+        setTokenExpiryTime(Date.now() + 50 * 60 * 1000);
+
         return token;
       } catch (error) {
         console.error("Error getting auth token:", error);
@@ -60,21 +77,27 @@ export function WithAuth({ children }: WithAuthProps) {
         setIsTokenLoading(false);
       }
     },
-    [user]
+    [user, authToken, tokenExpiryTime]
   );
 
-  // Initialize token when user changes
+  // Initialize token when user changes or component mounts
   useEffect(() => {
-    getAuthToken();
-  }, [getAuthToken]);
+    if (user) {
+      getAuthToken();
+    } else {
+      // Clear token when user is not available
+      setAuthToken(null);
+      setTokenExpiryTime(null);
+    }
+  }, [user, getAuthToken]);
 
-  // Refresh token periodically (every 50 minutes)
+  // Refresh token periodically (every 45 minutes)
   useEffect(() => {
     if (!user) return;
 
     const intervalId = setInterval(() => {
       getAuthToken(true); // Force refresh
-    }, 50 * 60 * 1000); // 50 minutes (Firebase tokens expire after 60 minutes)
+    }, 45 * 60 * 1000); // 45 minutes (Firebase tokens expire after 60 minutes)
 
     return () => clearInterval(intervalId);
   }, [user, getAuthToken]);
