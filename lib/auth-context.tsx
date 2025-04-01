@@ -5,6 +5,8 @@ import {
   User,
   onAuthStateChanged,
   signOut as firebaseSignOut,
+  browserLocalPersistence,
+  setPersistence,
 } from "firebase/auth";
 import { auth } from "./init/firebase";
 import { useRouter, usePathname } from "next/navigation";
@@ -15,6 +17,7 @@ type AuthContextType = {
   loading: boolean;
   signOut: () => Promise<void>;
   getIdToken: () => Promise<string>;
+  isAuthenticated: boolean;
 };
 
 // Create the auth context with default values
@@ -23,6 +26,7 @@ const AuthContext = createContext<AuthContextType>({
   loading: true,
   signOut: async () => {},
   getIdToken: async () => "",
+  isAuthenticated: false,
 });
 
 // Hook to use auth context
@@ -38,6 +42,7 @@ const publicPaths = ["/", "/auth"];
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
 
@@ -45,20 +50,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signOut = async () => {
     try {
       await firebaseSignOut(auth);
+      setIsAuthenticated(false);
       router.push("/auth");
     } catch (error) {
       console.error("Error signing out: ", error);
     }
   };
 
-  // Get ID token function
+  // Get ID token function with caching
   const getIdToken = async (): Promise<string> => {
     if (!user) {
       console.error("No user is signed in");
       return "";
     }
     try {
-      const token = await user.getIdToken();
+      const token = await user.getIdToken(false); // Don't force refresh by default
       return token;
     } catch (error) {
       console.error("Error getting ID token:", error);
@@ -67,10 +73,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   useEffect(() => {
+    // Set persistence to LOCAL - this ensures Firebase keeps the user
+    // logged in even after browser refresh/restart
+    setPersistence(auth, browserLocalPersistence)
+      .then(() => {
+        console.log("Auth persistence set to LOCAL");
+      })
+      .catch((error) => {
+        console.error("Error setting persistence:", error);
+      });
+
     // Subscribe to auth state changes
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
+      setIsAuthenticated(!!currentUser);
       setLoading(false);
+
+      // Log auth state for debugging
+      console.log(
+        "Auth state changed:",
+        currentUser ? "User authenticated" : "No user"
+      );
     });
 
     // Cleanup subscription
@@ -103,6 +126,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     loading,
     signOut,
     getIdToken,
+    isAuthenticated,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

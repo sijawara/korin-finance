@@ -146,7 +146,10 @@ export function Accounts({ period }: AccountsProps) {
                   <Badge variant="outline">
                     Paid: {formatAmount(receivable!.paid)}
                   </Badge>
-                  <Badge variant="outline" className="bg-amber-50">
+                  <Badge
+                    variant="secondary"
+                    className="text-yellow-600 dark:text-yellow-400"
+                  >
                     Unpaid: {formatAmount(receivable!.unpaid)}
                   </Badge>
                 </div>
@@ -183,8 +186,8 @@ export function Accounts({ period }: AccountsProps) {
                               </Badge>
                             ) : (
                               <Badge
-                                variant="outline"
-                                className="text-amber-700 border-amber-200 bg-amber-50"
+                                variant="secondary"
+                                className="text-yellow-600 dark:text-yellow-400"
                               >
                                 Unpaid
                               </Badge>
@@ -219,7 +222,10 @@ export function Accounts({ period }: AccountsProps) {
                   <Badge variant="outline">
                     Paid: {formatAmount(payable!.paid)}
                   </Badge>
-                  <Badge variant="outline" className="bg-amber-50">
+                  <Badge
+                    variant="secondary"
+                    className="text-yellow-600 dark:text-yellow-400"
+                  >
                     Unpaid: {formatAmount(payable!.unpaid)}
                   </Badge>
                 </div>
@@ -256,8 +262,8 @@ export function Accounts({ period }: AccountsProps) {
                               </Badge>
                             ) : (
                               <Badge
-                                variant="outline"
-                                className="text-amber-700 border-amber-200 bg-amber-50"
+                                variant="secondary"
+                                className="text-yellow-600 dark:text-yellow-400"
                               >
                                 Unpaid
                               </Badge>

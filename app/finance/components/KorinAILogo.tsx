@@ -54,9 +54,7 @@ export function KorinAILogo({
         priority
       />
       {withText && mounted && (
-        <span className={cn("font-semibold", textClassName)}>
-          Korin Finance
-        </span>
+        <span className={cn("font-semibold", textClassName)}>KorinAI Desk</span>
       )}
     </div>
   );
@@ -91,9 +89,7 @@ export function KorinAILogoWithContext({
         priority
       />
       {withText && mounted && (
-        <span className={cn("font-semibold", textClassName)}>
-          Korin Finance
-        </span>
+        <span className={cn("font-semibold", textClassName)}>KorinAI Desk</span>
       )}
     </div>
   );
