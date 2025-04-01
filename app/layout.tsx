@@ -17,15 +17,21 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "KorinAI Desk - Personal Finance App",
-  description: "Manage your personal finances easily with KorinAI Desk",
+  title: "KorinAI Desk - Comprehensive Financial Management",
+  description:
+    "Manage all your financial needs with KorinAI Desk - from personal finance to business analytics",
   manifest: "/manifest.json",
   applicationName: "KorinAI Desk",
   keywords: [
     "finance",
-    "personal finance",
+    "financial management",
+    "business finance",
+    "investment tracking",
     "budget",
     "expense tracking",
+    "wealth management",
+    "financial planning",
+    "business analytics",
     "AI",
     "KorinAI",
   ],

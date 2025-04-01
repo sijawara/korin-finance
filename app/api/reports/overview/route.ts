@@ -224,7 +224,8 @@ export async function GET(request: Request) {
       savingsRate,
       expenseToIncomeRatio,
       volatility,
-      disposableIncome
+      disposableIncome,
+      incomeResult.rows.length > 0
     );
 
     // Generate recommendations
@@ -430,8 +431,14 @@ function calculateFinancialHealthScore(
   savingsRate: number,
   expenseRatio: number,
   volatility: number,
-  disposableIncome: number
+  disposableIncome: number,
+  hasTransactions: boolean
 ): number {
+  // If there are no transactions, return a special score to indicate no data
+  if (!hasTransactions) {
+    return -1;
+  }
+
   // Weight each factor appropriately
   let score = 0;
 
@@ -469,6 +476,7 @@ function calculateDailyAverage(
 
 // Get description based on health score
 function getHealthScoreDescription(score: number): string {
+  if (score === -1) return "No transaction data available";
   if (score >= 80) return "Excellent financial health";
   if (score >= 60) return "Good financial position";
   if (score >= 40) return "Fair financial condition";
