@@ -16,8 +16,43 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Korin Finance - Personal Finance App",
-  description: "Manage your personal finances easily with Korin Finance",
+  title: "KorinAI Desk - Personal Finance App",
+  description: "Manage your personal finances easily with KorinAI Desk",
+  manifest: "/manifest.json",
+  applicationName: "KorinAI Desk",
+  keywords: [
+    "finance",
+    "personal finance",
+    "budget",
+    "expense tracking",
+    "AI",
+    "KorinAI",
+  ],
+  authors: [{ name: "KorinAI" }],
+  viewport: {
+    width: "device-width",
+    initialScale: 1,
+    maximumScale: 1,
+    userScalable: false,
+  },
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
+    { media: "(prefers-color-scheme: dark)", color: "#000000" },
+  ],
+  icons: {
+    icon: [
+      {
+        url: "/logo/KorinAILogo-Black.ico",
+        media: "(prefers-color-scheme: light)",
+      },
+      {
+        url: "/logo/KorinAILogo-White.ico",
+        media: "(prefers-color-scheme: dark)",
+      },
+    ],
+    shortcut: "/logo/KorinAILogo-Black.ico",
+    apple: "/logo/KorinAILogo-Black.png",
+  },
 };
 
 export default function RootLayout({
