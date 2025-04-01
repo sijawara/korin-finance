@@ -106,8 +106,10 @@ export function Overview({ period }: OverviewProps) {
                   financialHealth.score
                 )}`}
               >
-                {financialHealth.score}
-                <span className="text-lg font-normal">/100</span>
+                {financialHealth.score === -1 ? "--" : financialHealth.score}
+                {financialHealth.score !== -1 && (
+                  <span className="text-lg font-normal">/100</span>
+                )}
               </div>
               <div className="text-xs text-center text-muted-foreground">
                 {financialHealth.description}
@@ -369,6 +371,7 @@ export function Overview({ period }: OverviewProps) {
 
 // Helper function to get color based on health score
 function getHealthScoreColor(score: number): string {
+  if (score === -1) return "text-gray-500"; // No data score
   if (score >= 80) return "text-green-600";
   if (score >= 60) return "text-amber-600";
   if (score >= 40) return "text-orange-600";
