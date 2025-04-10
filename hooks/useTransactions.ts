@@ -131,6 +131,7 @@ export function useTransactions() {
   const [dateFilter, setDateFilter] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
+  const [typeFilter, setTypeFilter] = useState<string | null>(null);
   const [startDate, setStartDate] = useState<string | null>(null);
   const [endDate, setEndDate] = useState<string | null>(null);
 
@@ -144,6 +145,10 @@ export function useTransactions() {
 
     if (categoryFilter && categoryFilter !== "all") {
       params.append("category", categoryFilter);
+    }
+
+    if (typeFilter && typeFilter !== "all") {
+      params.append("type", typeFilter);
     }
 
     if (searchQuery) {
@@ -357,6 +362,7 @@ export function useTransactions() {
   // Update filter functions
   const applyFilters = (filters: {
     category?: string | null;
+    type?: string | null;
     dateRange?: string | null;
     search?: string | null;
     status?: string | null;
@@ -368,6 +374,10 @@ export function useTransactions() {
 
     if (filters.category !== undefined) {
       setCategoryFilter(filters.category);
+    }
+
+    if (filters.type !== undefined) {
+      setTypeFilter(filters.type);
     }
 
     if (filters.dateRange !== undefined) {
@@ -426,6 +436,7 @@ export function useTransactions() {
 
   const resetFilters = () => {
     setCategoryFilter(null);
+    setTypeFilter(null);
     setDateFilter(null);
     setSearchQuery(null);
     setStatusFilter(null);
@@ -461,6 +472,7 @@ export function useTransactions() {
     // Filters
     filters: {
       category: categoryFilter,
+      type: typeFilter,
       dateRange: dateFilter,
       search: searchQuery,
       status: statusFilter,

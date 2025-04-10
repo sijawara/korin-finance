@@ -28,6 +28,7 @@ export async function GET(request: Request) {
     const endDate = searchParams.get("endDate");
     const status = searchParams.get("status");
     const search = searchParams.get("search");
+    const type = searchParams.get("type");
 
     // Pagination parameters
     const page = parseInt(searchParams.get("page") || "1");
@@ -36,7 +37,7 @@ export async function GET(request: Request) {
 
     // Build query with potential filters
     let sql = `
-      SELECT t.*, c.name as category_name, c.color as category_color
+      SELECT t.*, c.name as category_name, c.color as category_color, c.type as category_type
       FROM transactions t
       LEFT JOIN categories c ON t.category_id = c.id
       WHERE t.profile_id = $1
@@ -65,6 +66,11 @@ export async function GET(request: Request) {
       params.push(status.toUpperCase()); // Ensure status is uppercase for consistency
     }
 
+    if (type) {
+      sql += ` AND c.type = $${paramIndex++}`;
+      params.push(type.toUpperCase()); // Ensure type is uppercase for consistency
+    }
+
     if (search) {
       sql += ` AND (
         t.description ILIKE $${paramIndex++} OR
@@ -78,6 +84,7 @@ export async function GET(request: Request) {
     // First, get total count for pagination metadata
     const countSql = `
       SELECT COUNT(*) FROM transactions t
+      LEFT JOIN categories c ON t.category_id = c.id
       WHERE t.profile_id = $1
       ${category ? `AND t.category_id = $${params.indexOf(category) + 1}` : ""}
       ${startDate ? `AND t.date >= $${params.indexOf(startDate) + 1}` : ""}
@@ -85,6 +92,11 @@ export async function GET(request: Request) {
       ${
         status
           ? `AND t.status = $${params.indexOf(status.toUpperCase()) + 1}`
+          : ""
+      }
+      ${
+        type
+          ? `AND c.type = $${params.indexOf(type.toUpperCase()) + 1}`
           : ""
       }
       ${

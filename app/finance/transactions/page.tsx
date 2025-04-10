@@ -31,6 +31,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { AddTransactionDialog } from "./components/add-transaction-dialog";
 import { TransactionDetailsDialog } from "./components/transaction-details-dialog";
+import { CustomDateRangeDialog } from "./components/custom-date-range-dialog";
 // Import hooks from hooks
 import { useTransactions, UiTransaction } from "@/hooks/useTransactions";
 import { useCategories, UiCategory } from "@/hooks/useCategories";
@@ -55,6 +56,7 @@ export default function TransactionsPage() {
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
+  const [customDateRangeOpen, setCustomDateRangeOpen] = useState(false);
 
   // Use hooks instead of direct API calls with pagination
   const {
@@ -126,7 +128,11 @@ export default function TransactionsPage() {
 
   // Handle date range filter changes
   const handleDateRangeChange = (value: string) => {
-    applyFilters({ dateRange: value === "all" ? null : value });
+    if (value === "custom") {
+      setCustomDateRangeOpen(true);
+    } else {
+      applyFilters({ dateRange: value === "all" ? null : value });
+    }
   };
 
   // Handle status filter changes
@@ -134,11 +140,25 @@ export default function TransactionsPage() {
     applyFilters({ status: value === "all" ? null : value });
   };
 
+  // Handle type filter changes
+  const handleTypeChange = (value: string) => {
+    applyFilters({ type: value === "all" ? null : value });
+  };
+
   // Handle reset filters
   const handleResetFilters = () => {
     setSearchQuery("");
     setDebouncedSearchQuery("");
     resetFilters();
+  };
+
+  // Handle custom date range selection
+  const handleCustomDateRange = (startDate: string, endDate: string) => {
+    applyFilters({
+      dateRange: "custom",
+      startDate,
+      endDate,
+    });
   };
 
   // Action handlers
@@ -258,7 +278,7 @@ export default function TransactionsPage() {
         </div>
       </div>
 
-      {/* Filters - Updated with handlers */}
+      {/* Filters - Updated with type filter */}
       <div className="flex flex-col gap-3 mb-4 sm:mb-6">
         <div className="w-full flex gap-2">
           <Input
@@ -269,6 +289,19 @@ export default function TransactionsPage() {
           />
         </div>
         <div className="flex flex-wrap gap-2 sm:gap-4">
+          <Select
+            value={filters.type || "all"}
+            onValueChange={handleTypeChange}
+          >
+            <SelectTrigger className="w-full sm:w-[180px] text-xs sm:text-sm h-9">
+              <SelectValue placeholder="Type" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Types</SelectItem>
+              <SelectItem value="income">Income</SelectItem>
+              <SelectItem value="expense">Expense</SelectItem>
+            </SelectContent>
+          </Select>
           <Select
             value={filters.category || "all"}
             onValueChange={handleCategoryChange}
@@ -314,28 +347,22 @@ export default function TransactionsPage() {
               <SelectItem value="unpaid">Unpaid</SelectItem>
             </SelectContent>
           </Select>
-          {(filters.category ||
-            filters.dateRange ||
-            filters.search ||
-            filters.status) && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleResetFilters}
-              className="text-xs sm:text-sm h-9"
-            >
-              Clear Filters
-            </Button>
-          )}
         </div>
 
-        {/* Show active filters */}
-        {(filters.category ||
+        {/* Show active filters - Updated with type filter */}
+        {(filters.type ||
+          filters.category ||
           filters.dateRange ||
           filters.search ||
           filters.status) && (
           <div className="flex flex-wrap gap-2 mt-2">
             <p className="text-xs text-muted-foreground">Active filters:</p>
+            {filters.type && (
+              <Badge variant="outline" className="text-xs">
+                Type:{" "}
+                {filters.type.charAt(0).toUpperCase() + filters.type.slice(1)}
+              </Badge>
+            )}
             {filters.category && (
               <Badge variant="outline" className="text-xs">
                 Category:{" "}
@@ -365,6 +392,22 @@ export default function TransactionsPage() {
           </div>
         )}
       </div>
+
+      {/* Reset filters button - Updated condition */}
+      {(filters.type ||
+        filters.category ||
+        filters.dateRange ||
+        filters.search ||
+        filters.status) && (
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={handleResetFilters}
+          className="text-xs sm:text-sm h-9"
+        >
+          Clear Filters
+        </Button>
+      )}
 
       {/* Transactions Table - Responsive Layout */}
       <div className="rounded-md border overflow-x-auto">
@@ -591,6 +634,15 @@ export default function TransactionsPage() {
           </p>
         </div>
       </div>
+
+      {/* Add the CustomDateRangeDialog component before the TransactionDetailsDialog */}
+      <CustomDateRangeDialog
+        open={customDateRangeOpen}
+        onOpenChange={setCustomDateRangeOpen}
+        onApply={handleCustomDateRange}
+        initialStartDate={filters.startDate || undefined}
+        initialEndDate={filters.endDate || undefined}
+      />
 
       {/* Transaction Details Dialog */}
       {selectedTransaction && (
