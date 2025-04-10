@@ -102,33 +102,13 @@ export function AddCategoryDialog({
     },
   });
 
-  // Set parent-only filter when component mounts
-  useEffect(() => {
-    updateParentOnlyFilter(true);
-
-    // Clean up filter when component unmounts
-    return () => {
-      updateParentOnlyFilter(false);
-    };
-  }, [updateParentOnlyFilter]);
-
-  // Update type filter when form type changes
+  // Watch form values
   const formType = form.watch("type");
-  useEffect(() => {
-    if (formType) {
-      updateTypeFilter(formType);
-    }
-
-    // Clean up filter when component unmounts
-    return () => {
-      updateTypeFilter("");
-    };
-  }, [formType, updateTypeFilter]);
-
-  // Watch for isParent changes to reset parentId appropriately
   const isParent = form.watch("isParent");
+
+  // Handle parent/child relationship changes
   useEffect(() => {
-    if (isParent) {
+    if (isParent && form.getValues("parentId")) {
       form.setValue("parentId", undefined);
     }
   }, [isParent, form]);
@@ -140,7 +120,22 @@ export function AddCategoryDialog({
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog 
+      open={open} 
+      onOpenChange={(value) => {
+        if (!value) {
+          form.reset();
+          updateParentOnlyFilter(false);
+          updateTypeFilter("");
+        } else {
+          updateParentOnlyFilter(true);
+          if (formType) {
+            updateTypeFilter(formType);
+          }
+        }
+        onOpenChange(value);
+      }}
+    >
       <DialogContent className="sm:max-w-[525px]">
         <DialogHeader>
           <DialogTitle>Add New Category</DialogTitle>

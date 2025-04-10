@@ -124,7 +124,7 @@ export async function POST(request: Request) {
     const profile_id = decodedToken.uid;
 
     const body = await request.json();
-    const { name, color, description, parent_id, is_parent } = body;
+    const { name, color, description, parent_id } = body;
     let { type } = body;
 
     // Validate required fields
@@ -147,6 +147,9 @@ export async function POST(request: Request) {
       );
     }
 
+    // Automatically set is_parent based on parent_id
+    const is_parent = !parent_id;
+
     // Create the new category
     const result = await db.query(
       `INSERT INTO categories 
@@ -159,7 +162,7 @@ export async function POST(request: Request) {
         color,
         description,
         parent_id,
-        is_parent || false,
+        is_parent,
         profile_id,
       ]
     );

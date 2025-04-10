@@ -75,13 +75,13 @@ export function Overview({ period }: OverviewProps) {
   }
 
   const { financialHealth, incomeMetrics, spendingMetrics, timeSeries } =
-    overview;
+    overview || {};
 
-  // Format chart data
-  const chartData = timeSeries.labels.map((label, index) => ({
+  // Format chart data with null checks
+  const chartData = (timeSeries?.labels || []).map((label, index) => ({
     name: formatChartLabel(label),
-    Income: timeSeries.income[index],
-    Expenses: timeSeries.expenses[index],
+    Income: timeSeries?.income?.[index] || 0,
+    Expenses: timeSeries?.expenses?.[index] || 0,
   }));
 
   return (
@@ -103,16 +103,16 @@ export function Overview({ period }: OverviewProps) {
               <p className="text-xs text-muted-foreground">Health Score</p>
               <div
                 className={`text-4xl font-bold text-center my-auto py-2 ${getHealthScoreColor(
-                  financialHealth.score
+                  financialHealth?.score ?? -1
                 )}`}
               >
-                {financialHealth.score === -1 ? "--" : financialHealth.score}
-                {financialHealth.score !== -1 && (
+                {financialHealth?.score === -1 || financialHealth?.score == null ? "--" : financialHealth.score}
+                {financialHealth?.score !== -1 && financialHealth?.score != null && (
                   <span className="text-lg font-normal">/100</span>
                 )}
               </div>
               <div className="text-xs text-center text-muted-foreground">
-                {financialHealth.description}
+                {financialHealth?.description || "No data available"}
               </div>
             </div>
 
@@ -120,17 +120,17 @@ export function Overview({ period }: OverviewProps) {
               <div className="flex flex-col items-center p-4 border rounded-lg h-full justify-between">
                 <p className="text-xs text-muted-foreground">Net Cash Flow</p>
                 <p className="text-3xl font-semibold text-center my-auto py-2">
-                  {formatAmount(Math.abs(financialHealth.netIncome))}
+                  {formatAmount(Math.abs(financialHealth?.netIncome || 0))}
                 </p>
                 <div>
                   <Badge
                     className={
-                      financialHealth.netIncome >= 0
+                      (financialHealth?.netIncome || 0) >= 0
                         ? "bg-green-100 hover:bg-green-100/80 text-green-700 dark:bg-green-800/30 dark:text-green-400"
                         : "bg-red-100 hover:bg-red-100/80 text-red-700 dark:bg-red-800/30 dark:text-red-400"
                     }
                   >
-                    {financialHealth.netIncome >= 0 ? "Surplus" : "Deficit"}
+                    {(financialHealth?.netIncome || 0) >= 0 ? "Surplus" : "Deficit"}
                   </Badge>
                 </div>
               </div>
@@ -138,21 +138,21 @@ export function Overview({ period }: OverviewProps) {
               <div className="flex flex-col items-center p-4 border rounded-lg h-full justify-between">
                 <p className="text-xs text-muted-foreground">Savings Rate</p>
                 <p className="text-3xl font-semibold text-center my-auto py-2">
-                  {financialHealth.savingsRate.toFixed(1)}%
+                  {(financialHealth?.savingsRate || 0).toFixed(1)}%
                 </p>
                 <div>
                   <Badge
                     className={
-                      financialHealth.savingsRate >= 20
+                      (financialHealth?.savingsRate || 0) >= 20
                         ? "bg-green-100 hover:bg-green-100/80 text-green-700 dark:bg-green-800/30 dark:text-green-400"
-                        : financialHealth.savingsRate >= 10
+                        : (financialHealth?.savingsRate || 0) >= 10
                         ? "bg-amber-100 hover:bg-amber-100/80 text-amber-700 dark:bg-amber-800/30 dark:text-amber-400"
                         : "bg-red-100 hover:bg-red-100/80 text-red-700 dark:bg-red-800/30 dark:text-red-400"
                     }
                   >
-                    {financialHealth.savingsRate >= 20
+                    {(financialHealth?.savingsRate || 0) >= 20
                       ? "Excellent"
-                      : financialHealth.savingsRate >= 10
+                      : (financialHealth?.savingsRate || 0) >= 10
                       ? "Good"
                       : "Low"}
                   </Badge>
@@ -162,21 +162,21 @@ export function Overview({ period }: OverviewProps) {
               <div className="flex flex-col items-center p-4 border rounded-lg h-full justify-between">
                 <p className="text-xs text-muted-foreground">Expense Ratio</p>
                 <p className="text-3xl font-semibold text-center my-auto py-2">
-                  {financialHealth.expenseToIncomeRatio.toFixed(1)}%
+                  {(financialHealth?.expenseToIncomeRatio || 0).toFixed(1)}%
                 </p>
                 <div>
                   <Badge
                     className={
-                      financialHealth.expenseToIncomeRatio <= 70
+                      (financialHealth?.expenseToIncomeRatio || 0) <= 70
                         ? "bg-green-100 hover:bg-green-100/80 text-green-700 dark:bg-green-800/30 dark:text-green-400"
-                        : financialHealth.expenseToIncomeRatio <= 90
+                        : (financialHealth?.expenseToIncomeRatio || 0) <= 90
                         ? "bg-amber-100 hover:bg-amber-100/80 text-amber-700 dark:bg-amber-800/30 dark:text-amber-400"
                         : "bg-red-100 hover:bg-red-100/80 text-red-700 dark:bg-red-800/30 dark:text-red-400"
                     }
                   >
-                    {financialHealth.expenseToIncomeRatio <= 70
+                    {(financialHealth?.expenseToIncomeRatio || 0) <= 70
                       ? "Low"
-                      : financialHealth.expenseToIncomeRatio <= 90
+                      : (financialHealth?.expenseToIncomeRatio || 0) <= 90
                       ? "Moderate"
                       : "High"}
                   </Badge>
@@ -186,17 +186,17 @@ export function Overview({ period }: OverviewProps) {
               <div className="flex flex-col items-center p-4 border rounded-lg h-full justify-between">
                 <p className="text-xs text-muted-foreground">Monthly Change</p>
                 <p className="text-3xl font-semibold text-center my-auto py-2">
-                  {Math.abs(financialHealth.monthlyChange).toFixed(1)}%
+                  {Math.abs(financialHealth?.monthlyChange || 0).toFixed(1)}%
                 </p>
                 <div>
                   <Badge
                     className={
-                      financialHealth.budgetStatus === "On track"
+                      financialHealth?.budgetStatus === "On track"
                         ? "bg-green-100 hover:bg-green-100/80 text-green-700 dark:bg-green-800/30 dark:text-green-400"
                         : "bg-red-100 hover:bg-red-100/80 text-red-700 dark:bg-red-800/30 dark:text-red-400"
                     }
                   >
-                    {financialHealth.budgetStatus}
+                    {financialHealth?.budgetStatus || "No data"}
                   </Badge>
                 </div>
               </div>
@@ -220,7 +220,7 @@ export function Overview({ period }: OverviewProps) {
               <div>
                 <p className="text-xs text-muted-foreground">Total Income</p>
                 <p className="text-2xl font-semibold">
-                  {formatAmount(incomeMetrics.totalIncome)}
+                  {formatAmount(incomeMetrics?.totalIncome || 0)}
                 </p>
               </div>
               <div className="grid grid-cols-2 gap-4">
@@ -229,7 +229,7 @@ export function Overview({ period }: OverviewProps) {
                     Income/Expense Ratio
                   </p>
                   <p className="text-lg font-medium">
-                    {incomeMetrics.incomeToExpenseRatio.toFixed(2)}
+                    {(incomeMetrics?.incomeToExpenseRatio || 0).toFixed(2)}
                   </p>
                 </div>
                 <div>
@@ -237,7 +237,7 @@ export function Overview({ period }: OverviewProps) {
                     Disposable Income
                   </p>
                   <p className="text-lg font-medium">
-                    {formatAmount(incomeMetrics.disposableIncome)}
+                    {formatAmount(incomeMetrics?.disposableIncome || 0)}
                   </p>
                 </div>
               </div>
@@ -247,7 +247,7 @@ export function Overview({ period }: OverviewProps) {
                     Income Sources
                   </p>
                   <p className="text-lg font-medium">
-                    {incomeMetrics.incomeSources}
+                    {incomeMetrics?.incomeSources || 0}
                   </p>
                 </div>
                 <div>
@@ -255,7 +255,7 @@ export function Overview({ period }: OverviewProps) {
                     Primary Source
                   </p>
                   <p className="text-lg font-medium">
-                    {incomeMetrics.primarySourcePercentage.toFixed(1)}%
+                    {(incomeMetrics?.primarySourcePercentage || 0).toFixed(1)}%
                   </p>
                 </div>
               </div>
@@ -276,14 +276,14 @@ export function Overview({ period }: OverviewProps) {
               <div>
                 <p className="text-xs text-muted-foreground">Total Expenses</p>
                 <p className="text-2xl font-semibold">
-                  {formatAmount(spendingMetrics.totalExpenses)}
+                  {formatAmount(spendingMetrics?.totalExpenses || 0)}
                 </p>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <p className="text-xs text-muted-foreground">Daily Average</p>
                   <p className="text-lg font-medium">
-                    {formatAmount(spendingMetrics.dailyAverage)}
+                    {formatAmount(spendingMetrics?.dailyAverage || 0)}
                   </p>
                 </div>
                 <div>
@@ -291,7 +291,7 @@ export function Overview({ period }: OverviewProps) {
                     Spending Volatility
                   </p>
                   <p className="text-lg font-medium">
-                    {spendingMetrics.volatility.toFixed(1)}%
+                    {(spendingMetrics?.volatility || 0).toFixed(1)}%
                   </p>
                 </div>
               </div>
@@ -299,13 +299,13 @@ export function Overview({ period }: OverviewProps) {
                 <div>
                   <p className="text-xs text-muted-foreground">Top Category</p>
                   <p className="text-lg font-medium">
-                    {spendingMetrics.topCategory.name}
+                    {spendingMetrics?.topCategory?.name || "No data"}
                   </p>
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground">% of Spending</p>
                   <p className="text-lg font-medium">
-                    {spendingMetrics.topCategory.percentage.toFixed(1)}%
+                    {(spendingMetrics?.topCategory?.percentage || 0).toFixed(1)}%
                   </p>
                 </div>
               </div>

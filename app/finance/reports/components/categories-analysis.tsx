@@ -88,8 +88,8 @@ export function CategoriesAnalysis({ period }: CategoriesAnalysisProps) {
   // Get the appropriate categories data based on the selected type
   const categories =
     categoryType === "income"
-      ? categoriesData.incomeCategories
-      : categoriesData.expenseCategories;
+      ? categoriesData?.incomeCategories || []
+      : categoriesData?.expenseCategories || [];
 
   // Set color palette for charts
   const COLORS = [
@@ -107,12 +107,17 @@ export function CategoriesAnalysis({ period }: CategoriesAnalysisProps) {
 
   // Format for pie chart
   const pieData = categories.map((item) => ({
-    name: item.name,
-    value: item.amount,
+    name: item.name || 'Unknown',
+    value: item.amount || 0,
   }));
 
   // Format for bar chart
-  const barData = [...categories].sort((a, b) => b.amount - a.amount);
+  const barData = [...categories]
+    .sort((a, b) => (b.amount || 0) - (a.amount || 0))
+    .map(item => ({
+      name: item.name || 'Unknown',
+      amount: item.amount || 0
+    }));
 
   return (
     <div className="space-y-6">
@@ -121,7 +126,7 @@ export function CategoriesAnalysis({ period }: CategoriesAnalysisProps) {
           <div>
             <CardTitle>Categories Analysis</CardTitle>
             <CardDescription>
-              Breakdown for {categoriesData.period.label}
+              Breakdown for {categoriesData?.period?.label || 'N/A'}
             </CardDescription>
           </div>
         </CardHeader>
@@ -171,7 +176,7 @@ export function CategoriesAnalysis({ period }: CategoriesAnalysisProps) {
                         fill="#8884d8"
                         dataKey="value"
                         label={({ name, percent }) =>
-                          `${name}: ${(percent * 100).toFixed(1)}%`
+                          `${name || 'Unknown'}: ${((percent || 0) * 100).toFixed(1)}%`
                         }
                       >
                         {pieData.map((entry, index) => (
@@ -183,7 +188,7 @@ export function CategoriesAnalysis({ period }: CategoriesAnalysisProps) {
                       </Pie>
                       <Tooltip
                         formatter={(value: number) => [
-                          formatAmount(value),
+                          formatAmount(value || 0),
                           "Amount",
                         ]}
                       />
@@ -224,7 +229,7 @@ export function CategoriesAnalysis({ period }: CategoriesAnalysisProps) {
                       />
                       <XAxis
                         type="number"
-                        tickFormatter={(value) => `${currency.symbol}${value}`}
+                        tickFormatter={(value) => `${currency?.symbol || '$'}${value || 0}`}
                       />
                       <YAxis
                         type="category"
@@ -234,10 +239,10 @@ export function CategoriesAnalysis({ period }: CategoriesAnalysisProps) {
                       />
                       <Tooltip
                         formatter={(value: number) => [
-                          formatAmount(value),
+                          formatAmount(value || 0),
                           "Amount",
                         ]}
-                        labelFormatter={(label) => `Category: ${label}`}
+                        labelFormatter={(label) => `Category: ${label || 'Unknown'}`}
                       />
                       <Bar
                         dataKey="amount"

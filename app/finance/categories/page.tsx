@@ -288,10 +288,10 @@ export default function CategoriesPage() {
           category={selectedCategory}
           open={detailsOpen}
           onOpenChange={(open) => {
+            setDetailsOpen(open);
             if (!open) {
               setSelectedCategory(null);
             }
-            setDetailsOpen(open);
           }}
           onEdit={handleEditCategory}
           onDelete={handleDeleteCategory}

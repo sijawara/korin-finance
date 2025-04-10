@@ -166,6 +166,22 @@ export async function POST(request: Request) {
       );
     }
 
+    // Get category type if category_id is provided
+    let finalAmount = amount;
+    if (category_id) {
+      const categoryResult = await db.query(
+        "SELECT type FROM categories WHERE id = $1",
+        [category_id]
+      );
+      
+      if (categoryResult.rows.length > 0) {
+        const categoryType = categoryResult.rows[0].type;
+        if (categoryType === 'EXPENSE') {
+          finalAmount = Math.abs(amount) * -1; // Convert to negative number
+        }
+      }
+    }
+
     // Format and validate status
     if (status) {
       status = status.toUpperCase();
@@ -191,7 +207,7 @@ export async function POST(request: Request) {
       [
         date,
         description,
-        amount,
+        finalAmount,
         status,
         notes,
         category_id,

@@ -101,6 +101,35 @@ export async function PATCH(request: NextRequest, props: RouteParams) {
       }
     }
 
+    // Process amount based on category type if amount is being updated
+    let finalAmount = amount;
+    if (amount !== undefined && category_id) {
+      const categoryResult = await db.query(
+        "SELECT type FROM categories WHERE id = $1",
+        [category_id]
+      );
+      
+      if (categoryResult.rows.length > 0) {
+        const categoryType = categoryResult.rows[0].type;
+        if (categoryType === 'EXPENSE') {
+          finalAmount = Math.abs(amount) * -1; // Convert to negative number
+        }
+      }
+    } else if (amount !== undefined && !category_id) {
+      // If amount is being updated but no category_id provided, check existing category
+      const transactionResult = await db.query(
+        `SELECT c.type 
+         FROM transactions t
+         LEFT JOIN categories c ON t.category_id = c.id
+         WHERE t.id = $1`,
+        [id]
+      );
+      
+      if (transactionResult.rows.length > 0 && transactionResult.rows[0].type === 'EXPENSE') {
+        finalAmount = Math.abs(amount) * -1;
+      }
+    }
+
     // Update the transaction, ensuring it belongs to the authenticated user
     const result = await db.query(
       `UPDATE transactions 
@@ -116,7 +145,7 @@ export async function PATCH(request: NextRequest, props: RouteParams) {
       [
         date,
         description,
-        amount,
+        finalAmount,
         status,
         notes,
         category_id,

@@ -114,32 +114,12 @@ export function CategoryDetailsDialog({
   const formType = form.watch("type");
   const isParent = form.watch("isParent");
 
-  // Set parent-only filter when component mounts
+  // Filter for parent categories
+  const availableParentCategories = allCategories.filter((cat) => cat.isParent);
+
+  // Reset form and update parent category when dialog opens
   useEffect(() => {
-    updateParentOnlyFilter(true);
-
-    // Clean up filter when component unmounts
-    return () => {
-      updateParentOnlyFilter(false);
-    };
-  }, [updateParentOnlyFilter]);
-
-  // Update type filter when form type changes
-  useEffect(() => {
-    if (formType) {
-      updateTypeFilter(formType);
-    }
-
-    // Clean up filter when component unmounts
-    return () => {
-      updateTypeFilter("");
-    };
-  }, [formType, updateTypeFilter]);
-
-  // Update form when category changes
-  useEffect(() => {
-    if (category) {
-      // Ensure all values have the correct types before setting form defaults
+    if (open) {
       const formattedCategory = {
         ...category,
         usageCount:
@@ -149,30 +129,24 @@ export function CategoryDetailsDialog({
         description: category.description || "",
       };
       form.reset(formattedCategory);
-    }
-  }, [category, form]);
 
-  // Find parent category if this is a child category
-  useEffect(() => {
-    if (category.parentId && !category.isParent) {
-      const parent = allCategories.find((c) => c.id === category.parentId);
-      if (parent) {
-        setParentCategory(parent);
+      if (category.parentId && !category.isParent) {
+        const parent = allCategories.find((c) => c.id === category.parentId);
+        if (parent) {
+          setParentCategory(parent);
+        }
+      } else {
+        setParentCategory(null);
       }
-    } else {
-      setParentCategory(null);
     }
-  }, [category, allCategories]);
+  }, [open, category, form, allCategories]);
 
-  // Watch for isParent changes to reset parentId appropriately
+  // Handle parent/child relationship changes
   useEffect(() => {
-    if (isParent) {
+    if (isParent && form.getValues("parentId")) {
       form.setValue("parentId", undefined);
     }
   }, [isParent, form]);
-
-  // Filter for parent categories
-  const availableParentCategories = allCategories.filter((cat) => cat.isParent);
 
   // Handle form submission
   const onSubmit = async (values: Category) => {
@@ -181,24 +155,19 @@ export function CategoryDetailsDialog({
     setIsSubmitting(true);
 
     try {
-      // Create updated category
       const updatedCategory = {
         ...values,
-        // Ensure description is always a string (not undefined)
         description: values.description || "",
-        // Ensure usageCount is a number
         usageCount:
           typeof values.usageCount === "string"
             ? parseInt(values.usageCount, 10) || 0
             : values.usageCount,
       };
 
-      // Call the onEdit function with the updated category
       if (onEdit) {
         await onEdit(updatedCategory);
       }
 
-      // Exit edit mode
       setIsEditMode(false);
     } catch (error) {
       console.error("Error updating category:", error);
@@ -217,7 +186,14 @@ export function CategoryDetailsDialog({
       open={open}
       onOpenChange={(value) => {
         if (!value) {
-          setIsEditMode(false); // Exit edit mode when closing dialog
+          setIsEditMode(false);
+          updateParentOnlyFilter(false);
+          updateTypeFilter("");
+        } else {
+          updateParentOnlyFilter(true);
+          if (formType) {
+            updateTypeFilter(formType);
+          }
         }
         onOpenChange(value);
       }}

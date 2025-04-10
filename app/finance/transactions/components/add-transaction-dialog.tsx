@@ -282,12 +282,9 @@ export function AddTransactionDialog({
   });
 
   function onSubmit(values: TransactionFormValues) {
-    // Apply positive/negative amount based on category type
-    const selectedCategory = categories.find(
-      (cat) => cat.id === values.category
-    );
-    const finalAmount =
-      Math.abs(values.amount) * (selectedCategory?.type === "expense" ? -1 : 1);
+    // No need to modify amount here since we're already handling it in the input
+    const finalAmount = values.amount;
+    const finalTaxAmount = values.tax_amount;
 
     // Create a transaction object to send to the API
     const createTransaction = async () => {
@@ -296,7 +293,7 @@ export function AddTransactionDialog({
         const transactionData = {
           description: values.description,
           amount: finalAmount,
-          tax_amount: values.tax_amount,
+          tax_amount: finalTaxAmount,
           categoryId: values.category,
           date: values.date.toISOString(),
           notes: values.notes || "",
@@ -334,7 +331,7 @@ export function AddTransactionDialog({
               body: JSON.stringify({
                 description: values.description,
                 amount: finalAmount,
-                tax_amount: values.tax_amount,
+                tax_amount: finalTaxAmount,
                 category_id: values.category,
                 date: values.date.toISOString(),
                 notes: values.notes || "",
@@ -424,24 +421,19 @@ export function AddTransactionDialog({
                         type="number"
                         step="0.01"
                         placeholder="Enter amount"
-                        value={value === 0 ? "" : Math.abs(Number(value || 0))}
+                        value={value === undefined ? "" : Math.abs(Number(value || 0))}
                         onChange={(e) => {
                           const inputValue = e.target.value;
-                          onChange(
-                            inputValue === ""
-                              ? undefined
-                              : Math.abs(parseFloat(inputValue))
-                          );
+                          if (inputValue === "") {
+                            onChange(undefined);
+                            return;
+                          }
+                          const absValue = Math.abs(parseFloat(inputValue));
+                          // Make negative if expense category is selected
+                          const finalValue = selectedCategoryType === "expense" ? -absValue : absValue;
+                          onChange(finalValue);
                         }}
-                        className={
-                          selectedCategoryType
-                            ? `${
-                                selectedCategoryType === "expense"
-                                  ? "border-red-300 focus-visible:ring-red-200"
-                                  : "border-green-300 focus-visible:ring-green-200"
-                              }`
-                            : ""
-                        }
+                        variant={selectedCategoryType || "default"}
                         {...fieldProps}
                       />
                     </FormControl>
@@ -481,25 +473,21 @@ export function AddTransactionDialog({
                       step="0.01"
                       placeholder="Enter tax amount"
                       value={
-                        value === 0
-                          ? ""
-                          : value === undefined
+                        value === undefined
                           ? ""
                           : Math.abs(Number(value))
                       }
                       onChange={(e) => {
                         const inputValue = e.target.value;
-                        onChange(
-                          inputValue === ""
-                            ? undefined
-                            : Math.abs(parseFloat(inputValue))
-                        );
+                        if (inputValue === "") {
+                          onChange(undefined);
+                          return;
+                        }
+                        const absValue = Math.abs(parseFloat(inputValue));
+                        // Always make tax amount negative
+                        onChange(-absValue);
                       }}
-                      className={
-                        selectedCategoryType === "expense"
-                          ? "border-red-300 focus-visible:ring-red-200"
-                          : ""
-                      }
+                      variant="expense"
                       {...fieldProps}
                     />
                   </FormControl>

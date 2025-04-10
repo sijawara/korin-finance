@@ -44,21 +44,22 @@ export function IncomeStatement({ period }: IncomeStatementProps) {
 
   // Group expenses by category if we have data
   const groupedExpenses =
-    incomeStatement?.expenses.reduce((acc, expense) => {
-      if (!acc[expense.category]) {
-        acc[expense.category] = [];
+    incomeStatement?.expenses?.reduce((acc, expense) => {
+      const category = expense.category || 'Uncategorized';
+      if (!acc[category]) {
+        acc[category] = [];
       }
-      acc[expense.category].push(expense);
+      acc[category].push(expense);
       return acc;
     }, {} as Record<string, typeof incomeStatement.expenses>) || {};
 
   // Calculate category totals
   const categoryTotals = Object.keys(groupedExpenses).map((category) => {
     const total = groupedExpenses[category].reduce(
-      (sum, item) => sum + item.amount,
+      (sum, item) => sum + (item.amount || 0),
       0
     );
-    const percentage = incomeStatement?.totals.totalExpenses
+    const percentage = incomeStatement?.totals?.totalExpenses
       ? Math.round((total / incomeStatement.totals.totalExpenses) * 100)
       : 0;
     return { category, total, percentage };
@@ -100,8 +101,8 @@ export function IncomeStatement({ period }: IncomeStatementProps) {
     );
   }
 
-  const { totalIncome, totalExpenses, netIncome, savingsRate } =
-    incomeStatement.totals;
+  const { totalIncome = 0, totalExpenses = 0, netIncome = 0, savingsRate = 0 } =
+    incomeStatement?.totals || {};
 
   return (
     <Card>
@@ -109,7 +110,7 @@ export function IncomeStatement({ period }: IncomeStatementProps) {
         <div>
           <CardTitle>Income Statement</CardTitle>
           <CardDescription>
-            Financial summary for {incomeStatement.periodLabel}
+            Financial summary for {incomeStatement?.periodLabel || 'N/A'}
           </CardDescription>
         </div>
       </CardHeader>
@@ -141,15 +142,15 @@ export function IncomeStatement({ period }: IncomeStatementProps) {
               </TableRow>
 
               {/* Income Items */}
-              {incomeStatement.income.map((item, index) => (
+              {(incomeStatement?.income || []).map((item, index) => (
                 <TableRow key={index} className="border-t-0">
                   <TableCell className="w-8"></TableCell>
-                  <TableCell>{item.category}</TableCell>
+                  <TableCell>{item.category || 'Uncategorized'}</TableCell>
                   <TableCell className="text-right text-green-600">
-                    {formatAmount(item.amount)}
+                    {formatAmount(item.amount || 0)}
                   </TableCell>
                   <TableCell className="text-right">
-                    {item.percentage}%
+                    {item.percentage || 0}%
                   </TableCell>
                 </TableRow>
               ))}
@@ -207,7 +208,7 @@ export function IncomeStatement({ period }: IncomeStatementProps) {
                         >
                           <TableCell></TableCell>
                           <TableCell className="pl-8 py-1 text-sm">
-                            {expense.subcategory}
+                            {expense.subcategory || 'Uncategorized'}
                             {expense.isDirectParentEntry && (
                               <span className="text-xs text-muted-foreground ml-2">
                                 (Direct)
@@ -215,10 +216,10 @@ export function IncomeStatement({ period }: IncomeStatementProps) {
                             )}
                           </TableCell>
                           <TableCell className="text-right py-1 text-sm text-red-600">
-                            {formatAmount(expense.amount)}
+                            {formatAmount(expense.amount || 0)}
                           </TableCell>
                           <TableCell className="text-right py-1 text-sm">
-                            {expense.percentage}%
+                            {expense.percentage || 0}%
                           </TableCell>
                         </TableRow>
                       )

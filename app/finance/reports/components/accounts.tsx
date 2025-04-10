@@ -71,7 +71,7 @@ export function Accounts({ period }: AccountsProps) {
     );
   }
 
-  const { receivable, payable, periodLabel } = accountsData;
+  const { receivable, payable, periodLabel } = accountsData || {};
 
   return (
     <div className="space-y-6">
@@ -79,7 +79,7 @@ export function Accounts({ period }: AccountsProps) {
         <CardHeader className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
             <CardTitle>Accounts Receivable & Payable</CardTitle>
-            <CardDescription>Analysis for {periodLabel}</CardDescription>
+            <CardDescription>Analysis for {periodLabel || 'N/A'}</CardDescription>
           </div>
         </CardHeader>
         <CardContent>
@@ -90,10 +90,10 @@ export function Accounts({ period }: AccountsProps) {
                 Total Receivable
               </p>
               <p className="text-2xl font-bold text-green-600">
-                {formatAmount(receivable!.total)}
+                {formatAmount(receivable?.total || 0)}
               </p>
               <p className="text-xs text-muted-foreground mt-2">
-                {receivable!.count} unpaid invoices
+                {receivable?.count || 0} unpaid invoices
               </p>
             </div>
             <div className="p-4 border rounded-lg">
@@ -101,10 +101,10 @@ export function Accounts({ period }: AccountsProps) {
                 Total Payable
               </p>
               <p className="text-2xl font-bold text-red-600">
-                {formatAmount(payable!.total)}
+                {formatAmount(payable?.total || 0)}
               </p>
               <p className="text-xs text-muted-foreground mt-2">
-                {payable!.count} unpaid bills
+                {payable?.count || 0} unpaid bills
               </p>
             </div>
             <div className="p-4 border rounded-lg">
@@ -112,10 +112,10 @@ export function Accounts({ period }: AccountsProps) {
                 Overdue Receivable
               </p>
               <p className="text-2xl font-bold text-amber-600">
-                {formatAmount(receivable!.overdue)}
+                {formatAmount(receivable?.overdue || 0)}
               </p>
               <p className="text-xs text-muted-foreground mt-2">
-                {receivable!.overdueCount} overdue invoices
+                {receivable?.overdueCount || 0} overdue invoices
               </p>
             </div>
             <div className="p-4 border rounded-lg">
@@ -123,10 +123,10 @@ export function Accounts({ period }: AccountsProps) {
                 Overdue Payable
               </p>
               <p className="text-2xl font-bold text-amber-600">
-                {formatAmount(payable!.overdue)}
+                {formatAmount(payable?.overdue || 0)}
               </p>
               <p className="text-xs text-muted-foreground mt-2">
-                {payable!.overdueCount} overdue bills
+                {payable?.overdueCount || 0} overdue bills
               </p>
             </div>
           </div>
@@ -144,13 +144,13 @@ export function Accounts({ period }: AccountsProps) {
                 <h3 className="text-lg font-medium">Unpaid Invoices</h3>
                 <div className="flex items-center gap-2">
                   <Badge variant="outline">
-                    Paid: {formatAmount(receivable!.paid)}
+                    Paid: {formatAmount(receivable?.paid || 0)}
                   </Badge>
                   <Badge
                     variant="secondary"
                     className="text-yellow-600 dark:text-yellow-400"
                   >
-                    Unpaid: {formatAmount(receivable!.unpaid)}
+                    Unpaid: {formatAmount(receivable?.unpaid || 0)}
                   </Badge>
                 </div>
               </div>
@@ -168,7 +168,7 @@ export function Accounts({ period }: AccountsProps) {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {receivable!.transactions.map(
+                    {(receivable?.transactions || []).map(
                       (transaction: Transaction, index: number) => (
                         <TableRow key={index}>
                           <TableCell className="font-medium">
@@ -220,13 +220,13 @@ export function Accounts({ period }: AccountsProps) {
                 <h3 className="text-lg font-medium">Unpaid Bills</h3>
                 <div className="flex items-center gap-2">
                   <Badge variant="outline">
-                    Paid: {formatAmount(payable!.paid)}
+                    Paid: {formatAmount(payable?.paid || 0)}
                   </Badge>
                   <Badge
                     variant="secondary"
                     className="text-yellow-600 dark:text-yellow-400"
                   >
-                    Unpaid: {formatAmount(payable!.unpaid)}
+                    Unpaid: {formatAmount(payable?.unpaid || 0)}
                   </Badge>
                 </div>
               </div>
@@ -244,7 +244,7 @@ export function Accounts({ period }: AccountsProps) {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {payable!.transactions.map(
+                    {(payable?.transactions || []).map(
                       (transaction: Transaction, index: number) => (
                         <TableRow key={index}>
                           <TableCell className="font-medium">

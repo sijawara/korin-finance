@@ -366,23 +366,11 @@ export function TransactionDetailsDialog({
     setIsSubmitting(true);
 
     try {
-      // Find the selected category
-      const selectedCategory = apiCategories.find(
-        (cat) => cat.id === values.categoryId
-      );
-      const categoryType = selectedCategory?.type.toLowerCase() as
-        | "income"
-        | "expense";
-
-      // Apply positive/negative amount based on category type
-      const finalAmount =
-        Math.abs(values.amount) * (categoryType === "expense" ? -1 : 1);
-
-      // Create updated transaction
+      // No need to modify the amount here since we're handling it in the input
       const updatedTransaction = {
         ...transaction,
         description: values.description,
-        amount: finalAmount,
+        amount: values.amount,
         tax_amount: values.tax_amount,
         categoryId: values.categoryId,
         date: values.date.toISOString(),
@@ -497,26 +485,19 @@ export function TransactionDetailsDialog({
                           type="number"
                           step="0.01"
                           placeholder="Enter amount"
-                          value={
-                            value === 0 ? "" : Math.abs(Number(value || 0))
-                          }
+                          value={value === undefined ? "" : Math.abs(Number(value || 0))}
                           onChange={(e) => {
                             const inputValue = e.target.value;
-                            onChange(
-                              inputValue === ""
-                                ? undefined
-                                : Math.abs(parseFloat(inputValue))
-                            );
+                            if (inputValue === "") {
+                              onChange(undefined);
+                              return;
+                            }
+                            const absValue = Math.abs(parseFloat(inputValue));
+                            // Make negative if expense category is selected
+                            const finalValue = selectedCategoryType === "expense" ? -absValue : absValue;
+                            onChange(finalValue);
                           }}
-                          className={
-                            selectedCategoryType
-                              ? `${
-                                  selectedCategoryType === "expense"
-                                    ? "border-red-300 focus-visible:ring-red-200"
-                                    : "border-green-300 focus-visible:ring-green-200"
-                                }`
-                              : ""
-                          }
+                          variant={selectedCategoryType || "default"}
                           {...fieldProps}
                         />
                       </FormControl>
@@ -556,25 +537,21 @@ export function TransactionDetailsDialog({
                         step="0.01"
                         placeholder="Enter tax amount"
                         value={
-                          value === 0
-                            ? "0"
-                            : value === undefined
+                          value === undefined
                             ? ""
                             : Math.abs(Number(value))
                         }
                         onChange={(e) => {
                           const inputValue = e.target.value;
-                          onChange(
-                            inputValue === ""
-                              ? undefined
-                              : Math.abs(parseFloat(inputValue))
-                          );
+                          if (inputValue === "") {
+                            onChange(undefined);
+                            return;
+                          }
+                          const absValue = Math.abs(parseFloat(inputValue));
+                          // Always make tax amount negative
+                          onChange(-absValue);
                         }}
-                        className={
-                          selectedCategoryType === "expense"
-                            ? "border-red-300 focus-visible:ring-red-200"
-                            : ""
-                        }
+                        variant="expense"
                         {...fieldProps}
                       />
                     </FormControl>
